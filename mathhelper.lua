@@ -4,6 +4,14 @@ function roundToGridBitShift(position, shift)
 	return position
 end
 
+function getBoundingBoxAverageEdgeLength(box)
+	local pos1 = box.left_top
+	local pos2 = box.right_bottom
+	local dx = pos2.x-pos1.x
+	local dy = pos2.y-pos1.y
+	return (dx+dy)/2
+end
+
 function getDistance(e1, e2)
 	local dx = e1.position.x-e2.position.x
 	local dy = e1.position.y-e2.position.y
