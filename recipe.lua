@@ -13,6 +13,24 @@ function parseIngredient(entry)
 	return {type, amt}
 end
 
+function addIngredientToList(list, item, amount, addIfPresent)
+	local added = false
+	for _,ing in pairs(list) do
+		local parse = parseIngredient(ing)
+		log(serpent.block(parse))
+		if parse[1] == item then
+			if addIfPresent then
+				parse[2] = parse[2]+amount
+			end
+			added = true
+			break
+		end
+	end
+	if not added then
+		table.insert(list, {item, amount})
+	end
+end
+
 function changeIngredientInList(list, item, repl, ratio, skipError)
 	for i = 1,#list do
 		local ing = parseIngredient(list[i])
@@ -86,17 +104,18 @@ function removeItemFromRecipe(recipe, item)
 	end
 end
 
-function addItemToRecipe(recipe, item, amountnormal, amountexpensive)
+function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPresent)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end
 	if recipe.ingredients then
-		table.insert(recipe.ingredients, {item, amountnormal})
+		addIngredientToList(recipe.ingredients, item, amountnormal, addIfPresent)
 	end
 	if recipe.normal and recipe.normal.ingredients then
-		table.insert(recipe.normal.ingredients, {item, amountnormal})
+		addIngredientToList(recipe.normal.ingredients, item, amountnormal, addIfPresent)
 	end
 	if recipe.expensive and recipe.expensive.ingredients then
-		table.insert(recipe.expensive.ingredients, {item, amountexpensive and amountexpensive or amountnormal})
+		local amt = amountexpensive and amountexpensive or amountnormal
+		addIngredientToList(recipe.expensive.ingredients, item, amt, addIfPresent)
 	end
 end
 
