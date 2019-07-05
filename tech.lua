@@ -2,7 +2,37 @@ require "arrays"
 require "mathhelper"
 require "strings"
 
-function getPrereqTechForPack(pack) --this is going to change in 0.17 to a dedicated tech for each
+--[[
+local CAMPAIGN_ONLY = {
+	"basic-mining",
+	"basic-electronics",
+	"basic-mapping",
+	"electric-inserter",
+	"basic-logistics",
+	"analyse-ship",
+	"basic-optics",
+	"basic-military",
+	"electric-mining",
+	"active-defense",
+	"repair-tech",
+	"passive-defense",
+	"improved-equipment",
+	"demo-science-pack",
+	"demo-logistics",
+	"demo-productivity-1",
+	"demo-shooting-speed-1",
+}
+--]]
+
+function isCampaignOnlyTech(tech)
+	if type(tech) == "string" then
+		tech = data.raw.technology[tech]
+	end
+	if not tech then error(serpent.block("No such technology found! " .. debug.traceback())) end
+	return not tech.enabled--listHasValue(CAMPAIGN_ONLY, tech.name)
+end
+
+function getPrereqTechForPack(pack)
 	if pack == "automation-science-pack" then
 		return nil
 	end
