@@ -53,7 +53,7 @@ end
 
 function getRandomTableEntry(value, randFunc)
 	local size = getTableSize(value)
-	local idx = randFunc(0, size-1)
+	local idx = randFunc and randFunc(0, size-1) or math.random(0, size-1)
 	--game.print(idx .. "/" .. size)
 	local i = 0
 	for key,val in pairs(value) do
@@ -71,7 +71,7 @@ function getCustomWeightedRandom(values, randFunc)
 	for idx,num in pairs(values) do
 		sum = sum+num
 	end
-	local rand = randFunc(0, sum)
+	local rand = randFunc and randFunc(0, sum) or math.random(0, sum)
 	local val = 0
 	for key,num in pairs(values) do
 		val = val+num

@@ -24,6 +24,53 @@ local CAMPAIGN_ONLY = {
 }
 --]]
 
+function techHasDependencyRecursive(tech, dep, recurse)
+	--if not recurse then log("Checking recursive deps of " .. tech.name .. " for " .. dep .. "; has [" .. serpent.block(tech.prerequisites)) end
+	if not tech.prerequisites then return false end
+	for _,pre in pairs(tech.prerequisites) do
+		--log("Checking dep " .. pre .. " for " .. tech.name)
+		if pre == dep then
+			return true
+		end
+		if techHasDependencyRecursive(data.raw.technology[pre], dep, true) then
+			return true
+		end
+	end
+	return false
+end
+
+function techUsesPack(tech, pack)
+	for _,ing in pairs(tech.unit.ingredients) do
+		if ing[1] == pack then
+			return true
+		end
+	end
+	return false
+end
+
+function addTechUnlock(tech, recipe)
+	if type(tech) == "string" then
+		tech = data.raw.technology[tech]
+	end
+	if not tech then error(serpent.block("No such technology found! " .. debug.traceback())) end
+	if not tech.effects then tech.effects = {} end
+	table.insert(tech.effects, {type = "unlock-recipe", recipe = recipe})
+end
+
+function removeTechUnlock(tech, recipe)
+	if type(tech) == "string" then
+		tech = data.raw.technology[tech]
+	end
+	if not tech then error(serpent.block("No such technology found! " .. debug.traceback())) end
+	if not tech.effects then return end
+	for i,eff in ipairs(tech.effects) do
+		if eff.type == "unlock-recipe" and eff.recipe == recipe then
+			table.remove(tech.effects, i)
+			break
+		end
+	end
+end
+
 function isCampaignOnlyTech(tech)
 	if type(tech) == "string" then
 		tech = data.raw.technology[tech]

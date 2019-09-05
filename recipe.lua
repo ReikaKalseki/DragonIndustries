@@ -1,3 +1,47 @@
+function addRecipeProduct(recipe, item, amountnormal, amountexpensive, addIfPresent)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then error(serpent.block("No such recipe found!")) end
+	if recipe.result and not recipe.results then
+		recipe.results = {{type = "item", name = recipe.result, amount = recipe.result_count}}
+	end
+	if recipe.normal and recipe.normal.result and not recipe.normal.results then
+		recipe.normal.results = {{type = "item", name = recipe.normal.result, amount = recipe.normal.result_count}}
+	end
+	if recipe.expensive and recipe.expensive.result and not recipe.expensive.results then
+		recipe.expensive.results = {{type = "item", name = recipe.expensive.result, amount = recipe.expensive.result_count}}
+	end
+	if recipe.results then
+		addIngredientToList(recipe.results, item, amountnormal, addIfPresent)
+	end
+	if recipe.normal and recipe.normal.results then
+		addIngredientToList(recipe.normal.results, item, amountnormal, addIfPresent)
+	end
+	if recipe.expensive and recipe.expensive.results then
+		local amt = amountexpensive and amountexpensive or amountnormal
+		addIngredientToList(recipe.expensive.results, item, amt, addIfPresent)
+	end
+	if not recipe.icon and not recipe.icons then -- needs an icon when >1 output
+		recipe.icons = {}
+		
+		local seek = data.raw.item[recipe.name]
+		if not seek then seek = data.raw.fluid[recipe.name] end
+		if seek then
+			table.insert(recipe.icons, {icon = seek.icon, icon_size = seek.icon_size})
+		else
+			local li = recipe.results
+			if not li and recipe.normal then li = recipe.normal.results end
+			for _,ing in pairs(li) do
+				if not ing.name then error("Found nil-named from: " .. serpent.block(li)) end
+				local val = data.raw.item[ing.name]
+				if not val then val = data.raw.fluid[ing.name] end
+				if not val then error("Product " .. ing.name .. " not indexable?!") end
+				table.insert(recipe.icons, {icon = val.icon, icon_size = val.icon_size})
+			end
+		end
+		table.insert(recipe.icons, {icon = "__DragonIndustries__/graphics/multi-recipe.png", icon_size = 32})
+	end
+end
+
 function turnRecipeIntoConversion(from, to)
 	local tgt = data.raw.recipe[to]
 	if not tgt then return end
@@ -17,7 +61,7 @@ function addIngredientToList(list, item, amount, addIfPresent)
 	local added = false
 	for _,ing in pairs(list) do
 		local parse = parseIngredient(ing)
-		log(serpent.block(parse))
+		--log(serpent.block(parse))
 		if parse[1] == item then
 			if addIfPresent then
 				parse[2] = parse[2]+amount
@@ -27,7 +71,7 @@ function addIngredientToList(list, item, amount, addIfPresent)
 		end
 	end
 	if not added then
-		table.insert(list, {item, amount})
+		table.insert(list, {type = "item", name = item, amount = amount})
 	end
 end
 
