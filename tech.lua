@@ -24,18 +24,25 @@ local CAMPAIGN_ONLY = {
 }
 --]]
 
-function techHasDependencyRecursive(tech, dep, recurse)
+function techHasDependencyRecursive(tech, dep, recurse, depth, path, root)
+	if not root then root = tech.name end
+	if not depth then depth = 0 end
+	if not path then path = {} end
+	if listHasValue(path, tech.name) then log("Found a tech recursion loop while checking " .. root .. " for " .. dep .. ", entering " .. tech.name .. ": " .. serpent.block(path)) return true end
+	table.insert(path, tech.name)
 	--if not recurse then log("Checking recursive deps of " .. tech.name .. " for " .. dep .. "; has [" .. serpent.block(tech.prerequisites)) end
+	--log("path is " .. serpent.block(path))
 	if not tech.prerequisites then return false end
 	for _,pre in pairs(tech.prerequisites) do
-		--log("Checking dep " .. pre .. " for " .. tech.name)
+		--log(depth .. " calls deep; Checking dep " .. pre .. " for " .. tech.name)
 		if pre == dep then
 			return true
 		end
-		if techHasDependencyRecursive(data.raw.technology[pre], dep, true) then
+		if techHasDependencyRecursive(data.raw.technology[pre], dep, true, depth+1, path, root) then
 			return true
 		end
 	end
+	table.remove(path)
 	return false
 end
 
