@@ -1,3 +1,23 @@
+function tryLoadItemWithFallback(name, amt, fallback, fallbackamt)
+	local val = tryLoadItem(name, amt)
+	if val == nil and fallback ~= nil then
+		amt = fallbackamt and fallbackamt or amt
+		log("Item " .. name .. " not found; switching to fallback " .. fallback .. " x" .. amt)
+		val = tryLoadItem(fallback, amt)
+	end
+	return val
+end
+
+function tryLoadItem(name, amt)
+	if data.raw.item[name] or data.raw.tool[name] or data.raw.ammo[name] or data.raw.capsule[name] then
+		return {type = "item", name = name, amount = amt}
+	elseif data.raw.fluid[name] then
+		return {type = "fluid", name = name, amount = amt}
+	else
+		return nil
+	end
+end
+
 function addRecipeProduct(recipe, item, amountnormal, amountexpensive, addIfPresent)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end

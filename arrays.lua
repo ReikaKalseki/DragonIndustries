@@ -4,6 +4,16 @@ function listHasValue(list, val)
 	end
 end
 
+function removeNilValues(list)
+	local ret = {}
+	for i,entry in pairs(list) do
+		if entry then
+			ret[#ret+1] = entry
+		end
+	end
+	return ret
+end
+
 function getHighestTableKey(list)
 	local lim = -9999999
 	local ret = nil
