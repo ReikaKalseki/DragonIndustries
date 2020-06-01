@@ -78,12 +78,16 @@ function removeTechUnlock(tech, recipe)
 	end
 end
 
+--THIS IS NO LONGER A THING AS OF 0.18'S REVERSION TO THE CAMPAIGN
 function isCampaignOnlyTech(tech)
+	--[[
 	if type(tech) == "string" then
 		tech = data.raw.technology[tech]
 	end
 	if not tech then error(serpent.block("No such technology found! " .. debug.traceback())) end
 	return not tech.enabled--listHasValue(CAMPAIGN_ONLY, tech.name)
+	--]]
+	return false
 end
 
 function getPrereqTechForPack(pack)
@@ -91,6 +95,13 @@ function getPrereqTechForPack(pack)
 		return nil
 	end
 	return data.raw.technology[pack].name
+end
+
+function addPrereqToTech(tech, prereq)
+	if type(tech) == "string" then tech = data.raw.technology[tech] end
+	if not tech then error("Tech does not exist!") end
+	if not tech.prerequisites then tech.prerequisites = {} end
+	table.insert(tech.prerequisites, prereq)
 end
 
 function splitTech(tech, prereqs, recipesToMove)
@@ -146,7 +157,7 @@ function replaceTechPrereq(tech, old, new)
 		end
 	end
 	tech.prerequisites = repl
-	log("Replaced prerequisite " .. old .. " with " .. new .. " in tech " .. tech.name)
+	log("Replaced prerequisite " .. old .. " with " .. new .. " in tech '" .. tech.name .. "'")
 	return flag
 end
 
@@ -165,6 +176,6 @@ function replaceTechPack(tech, old, new, factor)
 		end
 	end
 	tech.unit.ingredients = repl
-	log("Replaced science pack " .. old .. " with " .. new .. " in tech " .. tech.name)
+	log("Replaced science pack " .. old .. " with " .. new .. " in tech '" .. tech.name .. "'")
 	return flag
 end

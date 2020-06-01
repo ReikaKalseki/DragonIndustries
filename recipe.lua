@@ -1,20 +1,42 @@
-function tryLoadItemWithFallback(name, amt, fallback, fallbackamt)
-	local val = tryLoadItem(name, amt)
-	if val == nil and fallback ~= nil then
-		amt = fallbackamt and fallbackamt or amt
-		log("Item " .. name .. " not found; switching to fallback " .. fallback .. " x" .. amt)
-		val = tryLoadItem(fallback, amt)
+require "arrays"
+require "items"
+
+function recipeStartsEnabled(recipe)
+	if recipe.normal then
+		return recipe.normal.enabled == nil or recipe.normal.enabled == true
+	else
+		return recipe.enabled == nil or recipe.enabled == true
 	end
-	return val
 end
 
-function tryLoadItem(name, amt)
-	if data.raw.item[name] or data.raw.tool[name] or data.raw.ammo[name] or data.raw.capsule[name] then
-		return {type = "item", name = name, amount = amt}
-	elseif data.raw.fluid[name] then
-		return {type = "fluid", name = name, amount = amt}
+function getRecipeOutput(recipe)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then error(serpent.block("No such recipe found!")) end
+	if recipe.results then
+		return recipe.results
+	elseif recipe.result then
+		return recipe.result
+	end
+	if recipe.normal then
+		if recipe.normal.results then
+			return recipe.normal.results
+		elseif recipe.normal.result then
+			return recipe.normal.result
+		end
+	end
+	error("Recipe '" .. recipe.name .. "' has no output!")
+end
+
+function recipeProduces(recipe, item)
+	--log("Checking outputs of recipe '" .. recipe.name .. "' for '" .. item .. "'")
+	local out = getRecipeOutput(recipe)
+	--log(serpent.block(out))
+	if type(out) == "table" then
+		for _,e in pairs(out) do
+			if listHasValue(e, item) then return true end
+		end
 	else
-		return nil
+		return out == item
 	end
 end
 
@@ -74,7 +96,8 @@ end
 function parseIngredient(entry)
 	local type = entry.name and entry.name or entry[1]
 	local amt = entry.amount and entry.amount or entry[2]
-	return {type, amt}
+	local form = getItemType(type)
+	return {type, amt, form}
 end
 
 function addIngredientToList(list, item, amount, addIfPresent)
@@ -83,8 +106,14 @@ function addIngredientToList(list, item, amount, addIfPresent)
 		local parse = parseIngredient(ing)
 		--log(serpent.block(parse))
 		if parse[1] == item then
+			--log("Match")
 			if addIfPresent then
-				parse[2] = parse[2]+amount
+				if ing.amount then
+					ing.amount = parse[2]+amount
+				else
+					ing[2] = parse[2]+amount
+				end
+				--log("Adding " .. amount .. " to " .. serpent.block(ing))
 			end
 			added = true
 			break
@@ -110,6 +139,7 @@ function changeIngredientInList(list, item, repl, ratio, skipError)
 			ing[2] = math.ceil(ing[2]*ratio)
 			ing.name = repl
 			ing.amount = ing[2]
+			ing.type = ing[3]
 			list[i] = ing
 			return ing.amount
 		end
@@ -171,6 +201,8 @@ end
 function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPresent)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end
+	if not data.raw.item[item] then error("No such item '" .. item .. "'!") end
+	log("Adding '" .. item .. "' x" .. amountnormal .. " to recipe '" .. recipe.name .. "'")
 	if recipe.ingredients then
 		addIngredientToList(recipe.ingredients, item, amountnormal, addIfPresent)
 	end
@@ -185,6 +217,9 @@ end
 
 function moveRecipe(recipe, from, to)
 	local tech = data.raw.technology[from]
+	local tech2 = data.raw.technology[to]
+	if not tech then error("Tech '" .. from .. "' does not exist!") end
+	if not tech2 then error("Tech '" .. to .. "' does not exist!") end
 	local effects = {}
 	for _,effect in pairs(tech.effects) do
 		if effect.type == "unlock-recipe" and effect.recipe == recipe then
@@ -194,7 +229,27 @@ function moveRecipe(recipe, from, to)
 		end
 	end
 	tech.effects = effects
-	table.insert(data.raw.technology[to].effects, {type = "unlock-recipe", recipe = recipe})
+	for _,eff in pairs(tech2.effects) do
+		if eff.type == "unlock-recipe" and eff.recipe == recipe then return end
+	end
+	table.insert(tech2.effects, {type = "unlock-recipe", recipe = recipe})
+end
+
+function lockRecipe(recipe, tech)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then return end
+	local tech = data.raw.technology[tech]
+	if not tech then error("Tech '" .. from .. "' does not exist!") end
+	if not tech.effects then tech.effects = {} end
+	table.insert(tech.effects, {type = "unlock-recipe", recipe = recipe.name})
+	log("Putting recipe '" .. recipe.name .. "' behind tech '" .. tech.name .. "'")
+	recipe.enabled = false
+	if recipe.normal then
+		recipe.normal.enabled = false
+	end
+	if recipe.expensive then
+		recipe.expensive.enabled = false
+	end
 end
 
 --returns nil if none, not {}
@@ -237,7 +292,7 @@ local function buildRecipeDifference(name1, name2, list1, list2, form, recursion
 	if recursion then
 		for i,ing in ipairs(list1) do
 			--log(serpent.block(ing))
-			if listHasValue(recursion, ing[1]) and data.raw.recipe[ing[1]] then
+			if listHasValue(list2, ing[1]) and data.raw.recipe[ing[1]] then
 				log("Recursing " .. ing[1])
 				table.remove(list1, i)
 				local list = form == "expensive" and data.raw.recipe[ing[1]].expensive.ingredients or ("normal" and data.raw.recipe[ing[1]].normal.ingredients or data.raw.recipe[ing[1]].ingredients)
