@@ -1,6 +1,13 @@
 require "arrays"
 require "items"
 
+function parseIngredient(entry)
+	local type = entry.name and entry.name or entry[1]
+	local amt = entry.amount and entry.amount or entry[2]
+	local form = getItemType(type)
+	return {type, amt, form}
+end
+
 function recipeStartsEnabled(recipe)
 	if recipe.normal then
 		return recipe.normal.enabled == nil or recipe.normal.enabled == true
@@ -93,13 +100,6 @@ function turnRecipeIntoConversion(from, to)
 	if tgt.expensive then tgt.expensive.ingredients = rec.expensive.ingredients end
 end
 
-function parseIngredient(entry)
-	local type = entry.name and entry.name or entry[1]
-	local amt = entry.amount and entry.amount or entry[2]
-	local form = getItemType(type)
-	return {type, amt, form}
-end
-
 function addIngredientToList(list, item, amount, addIfPresent)
 	local added = false
 	for _,ing in pairs(list) do
@@ -152,6 +152,39 @@ function changeIngredientInList(list, item, repl, ratio, skipError)
 	end
 end
 
+function changeCountInList(list, item, delta, skipError)
+	for i = #list,1,-1 do
+		local ing = parseIngredient(list[i])
+		--[[
+		if ing[1] then
+			log("Pos " .. i .. ": " .. ing[1] .. " x" .. ing[2] .. " for " .. item .. "->" .. repl)
+		else
+			log("Pos " .. i .. " is invalid!")
+		end--]]
+		--log("Comparing '" .. ing[1] .. "' and '" .. item .. "': " .. (ing[1] == item and "true" or "false"))
+		if ing[1] == item then
+			ing[2] = ing[2]+delta
+			ing.name = item
+			ing.amount = ing[2]
+			ing.type = ing[3]
+			ing = {name = ing.name, amount = ing.amount, type = ing.type}
+			list[i] = ing
+			if ing.amount <= 0 then
+				table.remove(list, i)
+				return 0
+			else
+				return ing.amount
+			end
+		end
+	end
+	if skipError then
+		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
+		return 0
+	else
+		error("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
+	end
+end
+
 function replaceItemInRecipe(recipe, item, repl, ratio, skipError)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found! " .. debug.traceback())) end
@@ -166,6 +199,24 @@ function replaceItemInRecipe(recipe, item, repl, ratio, skipError)
 		exp = changeIngredientInList(recipe.expensive.ingredients, item, repl, ratio, skipError)
 	end
 	log("Replaced item " .. item .. " with " .. repl .. " in recipe " .. recipe.name .. " with a ratio of " .. ratio .. "x")
+	return {def, norm, exp}
+end
+
+function changeItemCountInRecipe(recipe, item, delta, skipError)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then error(serpent.block("No such recipe found! " .. debug.traceback())) end
+	local def, norm, exp = 0, 0, 0
+	if recipe.ingredients then
+		def = changeCountInList(recipe.ingredients, item, delta, skipError)
+	end
+	if recipe.normal and recipe.normal.ingredients then
+		norm = changeCountInList(recipe.normal.ingredients, item, delta, skipError)
+	end
+	if recipe.expensive and recipe.expensive.ingredients then
+		exp = changeCountInList(recipe.expensive.ingredients, item, delta, skipError)
+	end
+	log("Changed count of item " .. item .. " + " .. delta .. " in recipe " .. recipe.name)
+	--log(serpent.block(recipe))
 	return {def, norm, exp}
 end
 
@@ -534,4 +585,58 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	end
 	
 	return ret
+end
+
+function streamlineRecipeOutputWithRecipe(recipe, with, main)
+	log("Streamlining '" .. recipe.name .. "' with recipe '" .. with .. "' for main item '" .. main .. "'")
+	if not recipe.results then error("You can only output-streamline multi-output recipes!") end
+	local stream = data.raw.recipe[with]
+	if not stream then error("Recipe '" .. with .. "' does not exist!") end
+	local extras = {}
+	local extraAmt = {}
+	local amt = -1
+	for _,ing in pairs(recipe.results) do
+		local parse = parseIngredient(ing)
+		if parse[1] == main then
+			amt = parse[2]
+		else
+			table.insert(extras, parse[1])
+			extraAmt[parse[1]] = parse[2]
+		end
+	end
+	log("Extras: " .. serpent.block(extraAmt))
+	recipe.result = main
+	recipe.result_count = amt
+	recipe.results = {}
+	local need = stream.ingredients
+	if not need and stream.normal then need = stream.normal.ingredients end
+	if not need then error("Recipe '" .. with .. "' has no ingredients!") end
+	log("Total needed: " .. serpent.block(need))
+	for i=#need,1,-1 do
+		local ing = need[i]
+		local parse = parseIngredient(ing)
+		if listHasValue(extras, parse[1]) then
+			local ext = extraAmt[parse[1]]
+			if parse[2] <= ext then
+				log("Output contained sufficient extra. Removing from need.")
+				table.remove(need, i)
+			else
+				log("Output did not contain sufficient extra. Removing only " .. ext .. " from need of " .. parse[2] .. ".")
+				extraAmt[parse[1]] = 0
+				parse[2] = parse[2]-ext
+				if ing.amount then
+					ing.amount = parse[2]
+				else
+					ing[2] = parse[2]
+				end
+			end
+		end
+	end
+	log("Diff needed: " .. serpent.block(need))
+	for _,ing in pairs(need) do
+		local parse = parseIngredient(ing)
+		local amt = parse[2]
+		addItemToRecipe(recipe, parse[1], amt, amt, true)
+	end
+	changeItemCountInRecipe(recipe, with, -1, false)
 end
