@@ -604,24 +604,24 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 			extraAmt[parse[1]] = parse[2]
 		end
 	end
-	log("Extras: " .. serpent.block(extraAmt))
+	--log("Extras: " .. serpent.block(extraAmt))
 	recipe.result = main
 	recipe.result_count = amt
 	recipe.results = {}
 	local need = stream.ingredients
 	if not need and stream.normal then need = stream.normal.ingredients end
 	if not need then error("Recipe '" .. with .. "' has no ingredients!") end
-	log("Total needed: " .. serpent.block(need))
+	--log("Total needed: " .. serpent.block(need))
 	for i=#need,1,-1 do
 		local ing = need[i]
 		local parse = parseIngredient(ing)
 		if listHasValue(extras, parse[1]) then
 			local ext = extraAmt[parse[1]]
 			if parse[2] <= ext then
-				log("Output contained sufficient extra. Removing from need.")
+				--log("Output contained sufficient extra. Removing from need.")
 				table.remove(need, i)
 			else
-				log("Output did not contain sufficient extra. Removing only " .. ext .. " from need of " .. parse[2] .. ".")
+				--log("Output did not contain sufficient extra. Removing only " .. ext .. " from need of " .. parse[2] .. ".")
 				extraAmt[parse[1]] = 0
 				parse[2] = parse[2]-ext
 				if ing.amount then
@@ -632,7 +632,7 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 			end
 		end
 	end
-	log("Diff needed: " .. serpent.block(need))
+	--log("Diff needed: " .. serpent.block(need))
 	for _,ing in pairs(need) do
 		local parse = parseIngredient(ing)
 		local amt = parse[2]

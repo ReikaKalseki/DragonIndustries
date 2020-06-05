@@ -1,3 +1,7 @@
+function hasCollisionMask(object, mask)
+	return object.prototype and object.prototype.collision_mask[mask]
+end
+
 function listHasValue(list, val)
 	for _,entry in pairs(list) do
 		if entry == val then return true end
