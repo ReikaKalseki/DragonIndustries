@@ -1,13 +1,14 @@
 require "registration"
 
-function getItemType(name)
-	if data.raw.fluid[name] then
-		return "fluid"
-	elseif data.raw.item[name] then
-		return "item"
-	else
-		error("Item " .. name .. " does not exist in any form!")
+--"drop" follows standard https://wiki.factorio.com/Types/ProductPrototype / https://wiki.factorio.com/Types/ItemProductPrototype
+function addMineableDropToEntity(proto, drop)
+	if not proto.minable then proto.minable = {mining_time = 1, results = {}} end
+	if not proto.minable.results then
+		proto.minable.results = {}
+		table.insert(proto.minable.results, {type = "item", name = proto.minable.result, amount = proto.minable.count})
+		proto.minable.result = nil
 	end
+	table.insert(proto.minable.results, drop)
 end
 
 function getItemByName(name)
@@ -16,6 +17,16 @@ function getItemByName(name)
 		if data.raw[k][name] then
 			return data.raw[k][name]
 		end
+	end
+end
+
+function getItemType(name)
+	if data.raw.fluid[name] then
+		return "fluid"
+	elseif getItemByName(name) then
+		return "item"
+	else
+		error("Item " .. name .. " does not exist in any form!")
 	end
 end
 

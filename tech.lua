@@ -99,7 +99,8 @@ end
 
 function addPrereqToTech(tech, prereq)
 	if type(tech) == "string" then tech = data.raw.technology[tech] end
-	if not tech then error("Tech does not exist!") end
+	--if not tech then error("Tech does not exist!") end
+	if not tech then return end
 	if not tech.prerequisites then tech.prerequisites = {} end
 	table.insert(tech.prerequisites, prereq)
 end
@@ -132,9 +133,21 @@ function splitTech(tech, prereqs, recipesToMove)
 	data:extend({tech2})
 end
 
+function removeSciencePackFromTech(techname, pack)
+	local tech = data.raw.technology[techname]
+	if not tech then return end
+	removeEntryFromListIf(tech.unit.ingredients, function(entry) return entry[1] == pack end)
+	local prereq = getPrereqTechForPack(pack)
+	if prereq and data.raw.technology[prereq] then
+		removeEntryFromList(tech.prerequisites, prereq)
+	end
+	log("Removed science pack " .. pack .. " from tech " .. tech.name)
+end
+
 function addSciencePackToTech(techname, pack)
 	local tech = data.raw.technology[techname]
 	if not tech then return end
+	if techUsesPack(tech, pack) then return end
 	local prereq = getPrereqTechForPack(pack)
 	if prereq and data.raw.technology[prereq] and not listHasValue(tech.prerequisites, prereq) then
 		table.insert(tech.prerequisites, prereq)

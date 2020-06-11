@@ -612,6 +612,7 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 	if not need and stream.normal then need = stream.normal.ingredients end
 	if not need then error("Recipe '" .. with .. "' has no ingredients!") end
 	--log("Total needed: " .. serpent.block(need))
+	need = table.deepcopy(need)
 	for i=#need,1,-1 do
 		local ing = need[i]
 		local parse = parseIngredient(ing)

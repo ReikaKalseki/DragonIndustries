@@ -2,9 +2,42 @@ function hasCollisionMask(object, mask)
 	return object.prototype and object.prototype.collision_mask[mask]
 end
 
+function areTablesEqual(t1, t2)
+	if #t1 ~= #t2 then return false end
+	for i,e in ipairs(t1) do
+		if type(e) == "table" then
+			if not areTablesEqual(e, t2[i]) then return false end
+		else
+			if t2[i] ~= e then return false end
+		end
+	end
+	return true
+end
+
+function removeEntryFromListIf(list, func)
+	for i = #list,1,-1 do
+		if func(list[i]) then
+			table.remove(list, i)
+		end
+	end
+end
+
+function removeEntryFromList(list, val)
+	for i = #list,1,-1 do
+		if list[i] == val then
+			table.remove(list, i)
+		end
+	end
+end
+
 function listHasValue(list, val)
 	for _,entry in pairs(list) do
-		if entry == val then return true end
+		if type(val) == "table" then
+			log("Checking tables in " .. serpent.block(list))
+			if areTablesEqual(entry, val) then return end
+		else
+			if entry == val then return true end
+		end
 	end
 end
 
