@@ -12,6 +12,7 @@ function addMineableDropToEntity(proto, drop)
 end
 
 function getItemByName(name)
+	if game then return game.item_prototypes[name] end
 	local keys = {"item", "tool", "ammo", "repair-tool", "selection-tool", "item-with-entity-data", "capsule", "armor", "module", "gun"}
 	for _,k in pairs(keys) do
 		if data.raw[k][name] then
@@ -20,8 +21,26 @@ function getItemByName(name)
 	end
 end
 
+function getItemCategory(item)
+	if type(item) == "string" then
+		item = getItemByName(item)
+	end
+	if not item then error("No such item!") end
+	if game then
+		return item.group
+	else
+		local sub = item.subgroup
+		return data.raw["item-subgroup"].group
+	end
+end
+
+function getFluidByName(name)
+	if game then return game.fluid_prototypes[name] end
+	return data.raw.fluid[name]
+end
+
 function getItemType(name)
-	if data.raw.fluid[name] then
+	if getFluidByName(name) then
 		return "fluid"
 	elseif getItemByName(name) then
 		return "item"
@@ -33,7 +52,7 @@ end
 function tryLoadItem(name, amt)
 	if getItemByName(name) then
 		return {type = "item", name = name, amount = amt}
-	elseif data.raw.fluid[name] then
+	elseif getFluidByName(name) then
 		return {type = "fluid", name = name, amount = amt}
 	else
 		return nil

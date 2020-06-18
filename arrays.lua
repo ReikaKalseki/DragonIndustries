@@ -14,6 +14,33 @@ function areTablesEqual(t1, t2)
 	return true
 end
 
+function getTableSize(val)
+--[[
+	local count = 0
+	for key,num in pairs(val) do
+		count = count+1
+	end
+	return count
+	--]]
+	return table_size(val)
+end
+
+
+function getRandomTableEntry(value, randFunc)
+	local size = getTableSize(value)
+	local idx = randFunc and randFunc(0, size-1) or math.random(0, size-1)
+	--game.print(idx .. "/" .. size)
+	local i = 0
+	for key,val in pairs(value) do
+		--game.print(i .. " >> " .. val)
+		if i == idx then
+			--game.print(val)
+			return val
+		end
+		i = i+1
+	end
+end
+
 function removeEntryFromListIf(list, func)
 	for i = #list,1,-1 do
 		if func(list[i]) then
@@ -62,15 +89,6 @@ function getHighestTableKey(list)
 	end
 	return ret
 end
-
-function getTableSize(val)
-	local count = 0
-	for key,num in pairs(val) do
-		count = count+1
-	end
-	return count
-end
-
 function isTableAnArray(t)
 	--are all indices numerical; count for later
 	local count = 0

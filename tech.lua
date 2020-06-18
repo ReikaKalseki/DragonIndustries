@@ -91,10 +91,12 @@ function isCampaignOnlyTech(tech)
 end
 
 function getPrereqTechForPack(pack)
-	if pack == "automation-science-pack" then
-		return nil
+	local tech = data.raw.technology[pack]
+	if pack == "automation-science-pack" and mods["EarlyExtensions"] then
+		--tech = data.raw.technology["basic-science"] --EE compat
+		return "basic-science"
 	end
-	return data.raw.technology[pack].name
+	return tech and tech.name or nil
 end
 
 function addPrereqToTech(tech, prereq)

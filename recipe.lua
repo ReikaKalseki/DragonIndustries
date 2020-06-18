@@ -1,11 +1,55 @@
 require "arrays"
 require "items"
+require "mathhelper"
 
 function parseIngredient(entry)
 	local type = entry.name and entry.name or entry[1]
 	local amt = entry.amount and entry.amount or entry[2]
 	local form = getItemType(type)
 	return {type, amt, form}
+end
+
+function changeRecipeTime(recipe, factor, delta)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if recipe.normal and recipe.normal.energy_required then
+		recipe.normal.energy_required = roundToPlaces(recipe.normal.energy_required*factor+delta, -1)
+		recipe.expensive.energy_required = roundToPlaces(recipe.expensive.energy_required*factor+delta, -1)
+	else
+		recipe.energy_required = roundToPlaces(recipe.energy_required*factor+delta, -1)
+	end
+end
+
+function getRecipeCost(recipe, item)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if recipe.normal and recipe.normal.ingredients then
+		local norm = -1
+		local exp = -1
+		for _,ing in pairs(recipe.normal.ingredients) do
+			local parse = parseIngredient(ing)
+			if parse[1] == item then
+				norm = parse[2]
+				break
+			end
+		end
+		for _,ing in pairs(recipe.expensive.ingredients) do
+			local parse = parseIngredient(ing)
+			if parse[1] == item then
+				exp = parse[2]
+				break
+			end
+		end
+		return {norm, exp}
+	elseif recipe.ingredients then
+		for _,ing in pairs(recipe.ingredients) do
+			local parse = parseIngredient(ing)
+			if parse[1] == item then
+				return parse[2]
+			end
+		end
+	else
+		log(serpent.block(recipe))
+		error("Recipe '" .. recipe .. "' has no ingredients?!")
+	end
 end
 
 function recipeStartsEnabled(recipe)
@@ -100,8 +144,26 @@ function turnRecipeIntoConversion(from, to)
 	if tgt.expensive then tgt.expensive.ingredients = rec.expensive.ingredients end
 end
 
+function splitRecipeToNormalExpensive(recipe)
+	recipe.normal = {
+		enabled = recipe.enabled,
+		ingredients = table.deepcopy(recipe.ingredients),
+		results = recipe.results and table.deepcopy(recipe.results) or nil,
+		result = recipe.result,
+		energy_required = recipe.energy_required,
+	}
+	recipe.expensive = table.deepcopy(recipe.normal)
+	
+	recipe.ingredients = nil
+	recipe.results = nil
+	recipe.result = nil
+	recipe.enabled = nil
+	recipe.energy_required = nil
+end
+
 function addIngredientToList(list, item, amount, addIfPresent)
 	local added = false
+	log("Inserting recipe item " .. item .. " x " .. amount)
 	for _,ing in pairs(list) do
 		local parse = parseIngredient(ing)
 		--log(serpent.block(parse))
@@ -178,7 +240,7 @@ function changeCountInList(list, item, delta, skipError)
 		end
 	end
 	if skipError then
-		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
+		log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
 		return 0
 	else
 		error("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
@@ -188,17 +250,22 @@ end
 function replaceItemInRecipe(recipe, item, repl, ratio, skipError)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found! " .. debug.traceback())) end
+	if type(ratio) == "table" and recipe.ingredients then
+		splitRecipeToNormalExpensive(recipe)
+	end
 	local def, norm, exp = 0, 0, 0
+	local ratn = type(ratio) == "table" and ratio[1] or ratio
+	local rate = type(ratio) == "table" and ratio[2] or ratio
 	if recipe.ingredients then
-		def = changeIngredientInList(recipe.ingredients, item, repl, ratio, skipError)
+		def = changeIngredientInList(recipe.ingredients, item, repl, ratn, skipError)
 	end
 	if recipe.normal and recipe.normal.ingredients then
-		norm = changeIngredientInList(recipe.normal.ingredients, item, repl, ratio, skipError)
+		norm = changeIngredientInList(recipe.normal.ingredients, item, repl, ratn, skipError)
 	end
 	if recipe.expensive and recipe.expensive.ingredients then
-		exp = changeIngredientInList(recipe.expensive.ingredients, item, repl, ratio, skipError)
+		exp = changeIngredientInList(recipe.expensive.ingredients, item, repl, rate, skipError)
 	end
-	log("Replaced item " .. item .. " with " .. repl .. " in recipe " .. recipe.name .. " with a ratio of " .. ratio .. "x")
+	log("Replaced item " .. item .. " with " .. repl .. " in recipe " .. recipe.name .. " with a ratio of " .. serpent.block(ratio) .. "x")
 	return {def, norm, exp}
 end
 
@@ -264,6 +331,13 @@ function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPrese
 		local amt = amountexpensive and amountexpensive or amountnormal
 		addIngredientToList(recipe.expensive.ingredients, item, amt, addIfPresent)
 	end
+end
+
+function addRecipeIngredientToRecipe(recipe, item, recipeRef, ratio, addIfPresent)
+	local cost = getRecipeCost(recipeRef, item)
+	local amountnormal = type(cost) == "table" and cost[1] or cost
+	local amountexpensive = type(cost) == "table" and cost[2] or cost
+	addItemToRecipe(recipe, item, amountnormal*ratio, amountexpensive*ratio, addIfPresent)
 end
 
 function moveRecipe(recipe, from, to)
@@ -605,9 +679,6 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 		end
 	end
 	--log("Extras: " .. serpent.block(extraAmt))
-	recipe.result = main
-	recipe.result_count = amt
-	recipe.results = {}
 	local need = stream.ingredients
 	if not need and stream.normal then need = stream.normal.ingredients end
 	if not need then error("Recipe '" .. with .. "' has no ingredients!") end
@@ -621,14 +692,17 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 			if parse[2] <= ext then
 				--log("Output contained sufficient extra. Removing from need.")
 				table.remove(need, i)
+				table.remove(recipe.results, i)
 			else
 				--log("Output did not contain sufficient extra. Removing only " .. ext .. " from need of " .. parse[2] .. ".")
 				extraAmt[parse[1]] = 0
 				parse[2] = parse[2]-ext
 				if ing.amount then
 					ing.amount = parse[2]
+					recipe.results[i].amount = ing.amount
 				else
 					ing[2] = parse[2]
+					recipe.results[i][2] = ing[2]
 				end
 			end
 		end
@@ -640,4 +714,5 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 		addItemToRecipe(recipe, parse[1], amt, amt, true)
 	end
 	changeItemCountInRecipe(recipe, with, -1, false)
+	log(serpent.block(recipe))
 end

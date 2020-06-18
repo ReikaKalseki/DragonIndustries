@@ -30,6 +30,16 @@ function directionToVector(dir)
 	end
 end
 
+function roundToNearest(i, n)
+	local m = n/2
+	return i+m-(i+m)%n
+end
+
+function roundToPlaces(num, places)
+  local mult = 10^(places or 0)
+  return math.floor(num * mult + 0.5) / mult
+end
+
 function getOppositeDirection(dir) --direction is a number from 0 to 7
 	return (dir+4)%8
 end
@@ -49,21 +59,6 @@ function getCosInterpolate(x, xmax, ymax)
 	end
 	local func = 0.5-0.5*math.cos(x*math.pi/xmax)
 	return func*ymax
-end
-
-function getRandomTableEntry(value, randFunc)
-	local size = getTableSize(value)
-	local idx = randFunc and randFunc(0, size-1) or math.random(0, size-1)
-	--game.print(idx .. "/" .. size)
-	local i = 0
-	for key,val in pairs(value) do
-		--game.print(i .. " >> " .. val)
-		if i == idx then
-			--game.print(val)
-			return val
-		end
-		i = i+1
-	end
 end
 
 function getCustomWeightedRandom(values, randFunc)

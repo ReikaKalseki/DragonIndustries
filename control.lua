@@ -1,12 +1,20 @@
 require "entitytracker"
 --require "eventhandling"
 
+function initGlobal(markDirty)
+	if not global.dragonindustries then
+		global.dragonindustries = {}
+	end
+	local di = global.dragonindustries
+	di.dirty = markDirty
+end
+
 script.on_configuration_changed(function()
-	
+	initGlobal(true)
 end)
 
 script.on_init(function()
-
+	initGlobal(true)
 end)
 
 script.on_load(function()

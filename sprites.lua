@@ -149,6 +149,11 @@ function reparentSprites(from, to, obj)
 	handleAnimationTable(from, to, obj, "animation")
 	handleAnimationTable(from, to, obj, "on_animation")
 	handleAnimationTable(from, to, obj, "off_animation")
+	handleAnimationTable(from, to, obj, "folded_animation")
+	handleAnimationTable(from, to, obj, "folding_animation")
+	handleAnimationTable(from, to, obj, "preparing_animation")
+	handleAnimationTable(from, to, obj, "prepared_animation")
+	handleAnimationTable(from, to, obj, "energy_glow_animation")
 	if obj.variants then
 		for __,cat in pairs(obj.variants) do
 			for _,pic in pairs(cat) do
