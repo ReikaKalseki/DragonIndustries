@@ -470,6 +470,38 @@ local function createRecipeProfile(recipe)
     }
 end
 
+local function swapRecipeIO(recipe)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then return end
+	local temp = table.deepcopy(recipe.ingredients)
+	for _,e in pairs(temp) do
+		if not e.name then
+			e.name = e[1]
+			e.amount = e[2]
+			e.type = "item"
+		end
+	end
+	local result = recipe.results
+	if not result then
+		result = {{type = "item", name = recipe.result, amount = recipe.result_count and recipe.result_count or 1}}
+	end
+	recipe.ingredients = table.deepcopy(result)
+	recipe.results = temp
+end
+
+function createUncraftingRecipe(recipe, ref)
+	local ret = table.deepcopy(recipe)
+	swapRecipeIO(ret)
+	ret.name = recipe.name .. "-uncraft"
+	ret.icons = {{icon = ref.icon, icon_size = ref.icon_size}, {icon = "__DragonIndustries__/graphics/icons/uncrafting_overlay.png", icon_size = 32}}
+	ret.subgroup = ref.subgroup
+	ret.allow_decomposition = false
+	ret.allow_as_intermediate = false
+	ret.allow_intermediates = false
+	ret.localised_name = {"uncraft-recipe.name", {"entity-name." .. ref.name}}
+	return ret
+end
+
 function createConversionRecipe(from, to, register, tech, recursion)
 	local rec1 = data.raw.recipe[from]
 	local rec2 = data.raw.recipe[to]
@@ -580,7 +612,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	end
 	local ico = orig_icon_src.icon and orig_icon_src.icon or orig_icon_src.icons[1].icon
 	local icosz = orig_icon_src.icon_size and orig_icon_src.icon_size or orig_icon_src.icons[1].icon_size
-	ret.icons = {{icon = ico, icon_size = icosz}, {icon = "__FTweaks__/graphics/icons/conversion_overlay.png", icon_size = 32}}
+	ret.icons = {{icon = ico, icon_size = icosz}, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32}}
 	if not ret.icon then
 		if data.raw.item[result] then
 			ret.icon = data.raw.item[result].icon

@@ -89,7 +89,9 @@ function getHighestTableKey(list)
 	end
 	return ret
 end
+
 function isTableAnArray(t)
+	return #t == getTableSize(t)--[[
 	--are all indices numerical; count for later
 	local count = 0
 	for k,v in pairs(t) do
@@ -106,5 +108,5 @@ function isTableAnArray(t)
 			return false
 		end
 	end
-	return true
+	return true--]]
 end
