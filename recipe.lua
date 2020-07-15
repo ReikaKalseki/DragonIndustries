@@ -657,13 +657,16 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	
 	ret.allow_decomposition = false
 	ret.allow_as_intermediate = false
+	ret.allow_intermediates = false
 	if ret.normal then
 		ret.normal.allow_decomposition = false
 		ret.normal.allow_as_intermediate = false
+		ret.normal.allow_intermediates = false
 	end
 	if ret.expensive then
 		ret.expensive.allow_decomposition = false
 		ret.expensive.allow_as_intermediate = false
+		ret.expensive.allow_intermediates = false
 	end
 	
 	if ret.ingredients == nil and (ret.normal == nil or ret.normal.ingredients == nil) then error("Conversion recipe " .. ret.name .. " has no specified ingredients! Source recipes: " .. serpent.block(rec1) .. " , " .. serpent.block(rec2)) end

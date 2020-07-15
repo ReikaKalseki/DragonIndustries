@@ -14,6 +14,8 @@ function addCategoryResistance(category, type_, reduce, percent)
 end
 
 function addResistance(category, name, type_, reduce, percent)
+	if not reduce then reduce = 0 end
+	if not percent then percent = 0 end
 	if data.raw["damage-type"][type_] == nil then
 		log("Adding resistance to '" .. category .. "/" .. name .. "' with damage type '" .. type_ .. "', which does not exist!")
 	end
