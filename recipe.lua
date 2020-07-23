@@ -587,6 +587,8 @@ function createConversionRecipe(from, to, register, tech, recursion)
 				break
 			end
 		end
+	end
+	if result == nil then
 		for _,ing in pairs(rec2.results) do
 			if ing.type == "item" then
 				result = ing.name
@@ -749,5 +751,5 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 		addItemToRecipe(recipe, parse[1], amt, amt, true)
 	end
 	changeItemCountInRecipe(recipe, with, -1, false)
-	log(serpent.block(recipe))
+	--log(serpent.block(recipe))
 end

@@ -1,3 +1,23 @@
+function getLinearArray(num)
+	local ret = {}
+	for i = 1,num do
+		ret[i] = i
+	end
+	return ret
+end
+
+function getArrayOf(vals, num)
+	local ret = {}
+	while #ret < num do
+		for i,e in pairs(vals) do
+			if #ret < num then
+				table.insert(ret, e)
+			end
+		end
+	end
+	return ret
+end
+
 function hasCollisionMask(object, mask)
 	return object.prototype and object.prototype.collision_mask[mask]
 end
