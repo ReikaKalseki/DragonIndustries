@@ -1,3 +1,23 @@
+function lastIndexOf(str, seek)
+	local flip = string.reverse(str)
+	local s,e = string.find(str, seek, 1, true)
+	--log(flip .. " > " .. (s and s or "nil"))
+	if s and e then
+		s = string.len(str)-s
+		e = string.len(str)-e
+		return s,e
+	end
+end
+
+function splitAfter(str, mark)
+	local s,e = lastIndexOf(str, mark)
+	if s and e then
+		local part = string.sub(str, e+1)
+		--log(part)
+		return tonumber(part)
+	end
+end
+
 function splitString(str, seek)
 	local ret = {}
 	for s in str:gmatch("([^" .. seek .. "]+)") do

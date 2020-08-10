@@ -1,3 +1,15 @@
+require "strings"
+
+function getObjectTier(proto)
+	--return splitAfter(proto.name, "%-")
+	local val = 1
+	for num in string.gmatch(proto.name, "%d+") do
+		--log(num)
+		val = math.max(val, tonumber(num))
+	end
+	return val
+end
+
 function createTotalResistance()
 	local ret = {}
 	for name,damage in pairs(data.raw["damage-type"]) do
