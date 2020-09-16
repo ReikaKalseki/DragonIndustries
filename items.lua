@@ -93,7 +93,25 @@ local function isEntryInCategory(item, cat, nest)
 		elseif item.name then --actually a table value, likely {type, name, amount}
 			--log("Parsing named tabled value " .. serpent.block(item))
 			if item.type == "item" then
-				if not data.raw.item[item.name] then error("Recipe produces nonexistent item '" .. item.name .. "'!") end
+				local var = data.raw.item[item.name]
+				--log("plain item lookup is: " .. (var and var.name or "null"))
+				if var == nil then
+					var = data.raw.tool[item.name]
+					--log("tool item lookup is: " .. (var and var.name or "null"))
+				end
+				if var == nil then
+					var = data.raw["repair-tool"][item.name]
+					--log("repairtool item lookup is: " .. (var and var.name or "null"))
+				end
+				if var == nil then
+					var = data.raw.ammo[item.name]
+					--log("ammo item lookup is: " .. (var and var.name or "null"))
+				end
+				if var == nil then
+					var = data.raw.capsule[item.name]
+					--log("capsule item lookup is: " .. (var and var.name or "null"))
+				end
+				if var == nil then error("Recipe produces nonexistent item '" .. item.name .. "'!") end
 				if isEntryInCategory(item.name, cat, nest+1) then
 					return true
 				end

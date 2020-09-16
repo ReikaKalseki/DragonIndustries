@@ -1,3 +1,12 @@
+function clearTexture(entry)
+	if entry.sheet then clearTexture(entry.sheet) return end
+	entry.filename = "__core__/graphics/empty.png"
+	entry.width = 1
+	entry.height = 1
+	entry.shift = nil
+	entry.hr_version = nil
+end
+
 function createCircuitSprite()
 	local ret = {
         filename = "__DragonIndustries__/graphics/signal-connection.png",
@@ -124,13 +133,14 @@ local function handleAnimationTable(from, to, obj, key)
 end
 
 function reparentSprites(from, to, obj)
-	--log("Reparenting sprites in " .. obj.name)
+	log("Reparenting sprites in " .. obj.name)
 	if obj.icon then
 		obj.icon = genReparentedFilename(from, to, obj.icon)
 	end
 	if obj.icons then
+		log(serpent.block(obj.icons))
 		for _,ico in pairs(obj.icons) do
-			ico.filename = genReparentedFilename(from, to, ico.filename)
+			ico.icon = genReparentedFilename(from, to, ico.icon)
 		end
 	end
 	if obj.picture then

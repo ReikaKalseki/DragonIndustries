@@ -437,7 +437,7 @@ local function buildRecipeDifference(name1, name2, list1, list2, form, recursion
 		for i = 1,#list1 do
 			local ing = parseIngredient(list1[i])
 			--log("Parsing input ingredient: " .. (ing[1] and ing[1] or "nil") .. " x " .. (ing[2] and ing[2] or "nil"))
-			if #ing > 0 then
+			if #ing > 0 and ing[1] then
 				--log(#ing .. " > " .. tostring(ing))
 				counts[ing[1]] = (counts[ing[1]] and counts[ing[1]] or 0)+(ing[2] and ing[2] or 1) -- += in case recipe specifies an ingredient multiple times
 			else
@@ -448,7 +448,7 @@ local function buildRecipeDifference(name1, name2, list1, list2, form, recursion
 	for i = 1,#list2 do
 		local ing = parseIngredient(list2[i])
 		--log("Parsing output ingredient: " .. (ing[1] and ing[1] or "nil") .. " x " .. (ing[2] and ing[2] or "nil"))
-		if #ing > 0 then
+		if #ing > 0 and ing[1] then
 			local amt = ing[2]-(counts[ing[1]] and counts[ing[1]] or 0)
 			if amt > 0 then
 				ret[#ret+1] = {ing[1], amt}
@@ -457,6 +457,15 @@ local function buildRecipeDifference(name1, name2, list1, list2, form, recursion
 			log("Found empty entry in recipe " .. name2 .. "!")
 		end
 	end
+	
+	for i = #ret,1,-1 do
+		local e = ret[i]
+		if e == nil or e[1] == nil then
+			log("Slot #" .. i .. " in the recipe difference between '" .. name1 .. "' and '" .. name2 .. "' was nil or nil-named!")
+			table.remove(ret, i)
+		end
+	end
+	
 	return ret
 end
 
@@ -544,6 +553,15 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	end
 	
 	local prev = rec1.expensive and rec1.expensive.result or rec1.result
+	if not prev then
+		local list = rec1.results and rec1.results or rec1.expensive.results
+		for _,res in pairs(list) do
+			if res.type == "item" then
+				prev = res.name
+				break
+			end
+		end
+	end
 	
 	if rec1.ingredients and rec2.ingredients then
 		list = buildRecipeDifference(from, to, rec1.ingredients, rec2.ingredients, "basic", recursion)
@@ -564,14 +582,16 @@ function createConversionRecipe(from, to, register, tech, recursion)
 		e_norm = buildRecipeSurplus(from, to, norm1, norm2, "normal", recursion)
 	end
 	
-	if list then
-		table.insert(list, {prev, rec1.result_count and rec1.result_count or 1})
-	end
-	if exp then
-		table.insert(exp, {prev, rec1.expensive.result_count and rec1.expensive.result_count or 1})
-	end
-	if norm then
-		table.insert(norm, {prev, rec1.normal.result_count and rec1.normal.result_count or 1})
+	if prev then
+		if list then
+			table.insert(list, {prev, rec1.result_count and rec1.result_count or 1})
+		end
+		if exp then
+			table.insert(exp, {prev, rec1.expensive.result_count and rec1.expensive.result_count or 1})
+		end
+		if norm then
+			table.insert(norm, {prev, rec1.normal.result_count and rec1.normal.result_count or 1})
+		end
 	end
 	
 	local ret = table.deepcopy(rec2)
@@ -581,7 +601,11 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	local result = rec2.result and rec2.result or rec2.normal.result
 	
 	if main == nil then
-		for _,ing in pairs(rec1.results) do
+		local rec1results = rec1.results and rec1.results or rec1.normal.results
+		if rec1results == nil then
+			error("Recipe '" .. rec1.name .. "' has neither a result on the recipe nor its cost subrecipe!" .. serpent.block(rec1))
+		end
+		for _,ing in pairs(rec1results) do
 			if ing.type == "item" then
 				main = ing.name
 				break
@@ -589,7 +613,11 @@ function createConversionRecipe(from, to, register, tech, recursion)
 		end
 	end
 	if result == nil then
-		for _,ing in pairs(rec2.results) do
+		local rec2results = rec2.results and rec2.results or rec2.normal.results
+		if rec2results == nil then
+			error("Recipe '" .. rec1.name .. "' has neither a result on the recipe nor its cost subrecipe!" .. serpent.block(rec1))
+		end
+		for _,ing in pairs(rec2results) do
 			if ing.type == "item" then
 				result = ing.name
 				break
@@ -623,9 +651,22 @@ function createConversionRecipe(from, to, register, tech, recursion)
 		end
 	end
 	if e_list then
-		ret.results = {{type = "item", name = ret.result, amount = ret.result_count and ret.result_count or 1}}
+		local out = ret.result
+		if out == nil then
+			for _,ing in pairs(ret.results) do
+				if ing.type == "item" then
+					out = ing.name
+					break
+				end
+			end
+		end
+		ret.results = {{type = "item", name = out, amount = ret.result_count and ret.result_count or 1}}
 		for type,count in pairs(e_list) do
-			table.insert(ret.results, {type = "item", name = type, amount = count})
+			if not type then
+				log("Found a nameless entry in a recipe result/ingredient list when generating a conversion recipe?")
+			else
+				table.insert(ret.results, {type = "item", name = type, amount = count})
+			end
 		end
 		ret.result = nil
 		ret.subgroup = data.raw.item[result].subgroup
@@ -633,9 +674,22 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	if ret.normal then
 		ret.normal.ingredients = norm
 		if e_norm then
-			ret.normal.results = {{type = "item", name = ret.normal.result, amount = ret.normal.result_count and ret.normal.result_count or 1}}
+			local out = ret.normal.result
+			if out == nil then
+				for _,ing in pairs(ret.normal.results) do
+					if ing.type == "item" then
+						out = ing.name
+						break
+					end
+				end
+			end
+			ret.normal.results = {{type = "item", name = out, amount = ret.normal.result_count and ret.normal.result_count or 1}}
 			for type,count in pairs(e_norm) do
-				table.insert(ret.normal.results, {type = "item", name = type, amount = count})
+				if not type then
+					log("Found a nameless entry in a recipe result/ingredient list when generating a conversion recipe?")
+				else
+					table.insert(ret.normal.results, {type = "item", name = type, amount = count})
+				end
 			end
 			ret.normal.result = nil
 			ret.subgroup = data.raw.item[result].subgroup
@@ -644,9 +698,22 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	if ret.expensive then
 		ret.expensive.ingredients = exp
 		if e_exp then
-			ret.expensive.results = {{type = "item", name = ret.expensive.result, amount = ret.expensive.result_count and ret.expensive.result_count or 1}}
+			local out = ret.expensive.result
+			if out == nil then
+				for _,ing in pairs(ret.expensive.results) do
+					if ing.type == "item" then
+						out = ing.name
+						break
+					end
+				end
+			end
+			ret.expensive.results = {{type = "item", name = out, amount = ret.expensive.result_count and ret.expensive.result_count or 1}}
 			for type,count in pairs(e_exp) do
-				table.insert(ret.expensive.results, {type = "item", name = type, amount = count})
+				if not type then
+					log("Found a nameless entry in a recipe result/ingredient list when generating a conversion recipe?")
+				else
+					table.insert(ret.expensive.results, {type = "item", name = type, amount = count})
+				end
 			end
 			ret.expensive.result = nil
 			ret.subgroup = data.raw.item[result].subgroup
@@ -694,6 +761,8 @@ function createConversionRecipe(from, to, register, tech, recursion)
 			table.insert(data.raw.technology[tech].effects, {type = "unlock-recipe", recipe = name})
 		end
 	end
+	
+	log(serpent.block(ret))
 	
 	return ret
 end
