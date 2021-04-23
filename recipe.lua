@@ -762,7 +762,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 		end
 	end
 	
-	log(serpent.block(ret))
+	--log(serpent.block(ret))
 	
 	return ret
 end

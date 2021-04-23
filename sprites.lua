@@ -138,7 +138,7 @@ function reparentSprites(from, to, obj)
 		obj.icon = genReparentedFilename(from, to, obj.icon)
 	end
 	if obj.icons then
-		log(serpent.block(obj.icons))
+		--log(serpent.block(obj.icons))
 		for _,ico in pairs(obj.icons) do
 			ico.icon = genReparentedFilename(from, to, ico.icon)
 		end
