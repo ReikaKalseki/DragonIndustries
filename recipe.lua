@@ -335,6 +335,8 @@ end
 
 function addRecipeIngredientToRecipe(recipe, item, recipeRef, ratio, addIfPresent)
 	local cost = getRecipeCost(recipeRef, item)
+	if cost == nil then cost = 0 end
+	if cost == 0 then cost = 1 end
 	local amountnormal = type(cost) == "table" and cost[1] or cost
 	local amountexpensive = type(cost) == "table" and cost[2] or cost
 	addItemToRecipe(recipe, item, amountnormal*ratio, amountexpensive*ratio, addIfPresent)
@@ -767,7 +769,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	return ret
 end
 
-function streamlineRecipeOutputWithRecipe(recipe, with, main)
+function streamlineRecipeOutputWithRecipe(recipe, with, main, skipError)
 	log("Streamlining '" .. recipe.name .. "' with recipe '" .. with .. "' for main item '" .. main .. "'")
 	if not recipe.results then error("You can only output-streamline multi-output recipes!") end
 	local stream = data.raw.recipe[with]
@@ -784,11 +786,11 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 			extraAmt[parse[1]] = parse[2]
 		end
 	end
-	--log("Extras: " .. serpent.block(extraAmt))
+	log("Extras: " .. serpent.block(extraAmt))
 	local need = stream.ingredients
 	if not need and stream.normal then need = stream.normal.ingredients end
 	if not need then error("Recipe '" .. with .. "' has no ingredients!") end
-	--log("Total needed: " .. serpent.block(need))
+	log("Total needed: " .. serpent.block(need))
 	need = table.deepcopy(need)
 	for i=#need,1,-1 do
 		local ing = need[i]
@@ -796,11 +798,11 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 		if listHasValue(extras, parse[1]) then
 			local ext = extraAmt[parse[1]]
 			if parse[2] <= ext then
-				--log("Output contained sufficient extra. Removing from need.")
+				log("Output contained sufficient extra. Removing from need.")
 				table.remove(need, i)
 				table.remove(recipe.results, i)
 			else
-				--log("Output did not contain sufficient extra. Removing only " .. ext .. " from need of " .. parse[2] .. ".")
+				log("Output did not contain sufficient extra. Removing only " .. ext .. " from need of " .. parse[2] .. ".")
 				extraAmt[parse[1]] = 0
 				parse[2] = parse[2]-ext
 				if ing.amount then
@@ -819,6 +821,6 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main)
 		local amt = parse[2]
 		addItemToRecipe(recipe, parse[1], amt, amt, true)
 	end
-	changeItemCountInRecipe(recipe, with, -1, false)
+	changeItemCountInRecipe(recipe, with, -1, skipError)
 	--log(serpent.block(recipe))
 end
