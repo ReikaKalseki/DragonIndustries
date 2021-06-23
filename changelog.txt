@@ -1,0 +1,76 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.101.1
+Date: Mar 25 2021
+	- Update to 1.1
+---------------------------------------------------------------------------------------------------
+Version: 1.18.24
+Date: Nov 15 2020
+	- Improved item lookups
+	- Improved recipe mod compatibility
+	- Inherited biome color system from Bioluminescence
+---------------------------------------------------------------------------------------------------
+Version: 1.18.18
+Date: Aug 10 2020
+	- Added more library functions
+---------------------------------------------------------------------------------------------------
+Version: 1.18.15
+Date: Jul 28 2020
+	- Fixed error in resistance handling
+	- Fixed conversion recipes being used as intermediates
+	- Fixed conversion recipes sometimes giving nothing
+---------------------------------------------------------------------------------------------------
+Version: 1.18.10
+Date: Jun 29 2020
+	- Added more library functions
+	- Redirected getTableSize to native table_size
+	- Added ore cache
+	- Greatly expanded recipe handling
+	- Improved sprite handling comprehensiveness
+	- Inherited conversion recipe sprites from FTweaks
+---------------------------------------------------------------------------------------------------
+Version: 1.18.5
+Date: Jun 11 2020
+	- Added more library functions
+	- Fixed bug in conversion recipe creation
+	- Expanded tech handling
+---------------------------------------------------------------------------------------------------
+Version: 1.18.2
+Date: Jun 7 2020
+	- Greatly improved sprite handling libraries
+	- Added itme handling library
+	- Expanded and improved recipe handling
+	- Removed campaign tech handling
+	- Expanded tech handling
+---------------------------------------------------------------------------------------------------
+Version: 1.18.1
+Date: May 29 2020
+	- Update to 0.18
+---------------------------------------------------------------------------------------------------
+Version: 1.17.35
+Date: Dec 29 2019
+	- Added more library functions
+	- Added basic fluid ingredients for use in other mods
+	- Removed chemplant autobarelling support
+---------------------------------------------------------------------------------------------------
+Version: 1.17.24
+Date: Sep 30 2019
+	- Improved recipe handling
+	- Expanded tech handling
+---------------------------------------------------------------------------------------------------
+Version: 1.17.18
+Date: Aug 2 2019
+	- Fixed campaign tech handling
+---------------------------------------------------------------------------------------------------
+Version: 1.17.15
+Date: Jul 1 2019
+	- Expanded recipe handling
+---------------------------------------------------------------------------------------------------
+Version: 1.17.12
+Date: Jun 17 2019
+	- Expanded string handling
+	- Added EntityTracker system
+---------------------------------------------------------------------------------------------------
+Version: 1.17.6
+Date: Jun 6 2019
+	- Creation
+---------------------------------------------------------------------------------------------------
