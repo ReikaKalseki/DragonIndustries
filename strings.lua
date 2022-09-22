@@ -36,3 +36,7 @@ function literalReplace(str, seek, repl)
 	end
 	return ret
 end
+
+function stringStartsWith(str, seek)
+	return string.sub(str, 1, string.len(seek)) == seek
+end

@@ -137,3 +137,24 @@ end
 function isItemInCategory(item, cat)
 	return isEntryInCategory(item, cat, 0)
 end
+
+function createBasicCraftingItem(name, icon, ingredients, time, stacksize)
+  local item = {
+    type = "item",
+    name = name,
+    icon = icon,
+    icon_size = 32,
+    subgroup = "intermediate-product",
+    order = "o[" .. name .. "]",
+    stack_size = stacksize and stacksize or 100
+  }
+  local recipe =   {
+    type = "recipe",
+    name = name,
+    enabled = false,
+    ingredients = ingredients,
+    energy_required = time,
+    result = name
+  }
+  return item, recipe
+end
