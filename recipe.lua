@@ -91,9 +91,7 @@ function recipeProduces(recipe, item)
 	end
 end
 
-function addRecipeProduct(recipe, item, amountnormal, amountexpensive, addIfPresent)
-	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
-	if not recipe then error(serpent.block("No such recipe found!")) end
+function convertRecipeToResultTable(recipe)
 	if recipe.result and not recipe.results then
 		recipe.results = {{type = "item", name = recipe.result, amount = recipe.result_count}}
 	end
@@ -103,6 +101,12 @@ function addRecipeProduct(recipe, item, amountnormal, amountexpensive, addIfPres
 	if recipe.expensive and recipe.expensive.result and not recipe.expensive.results then
 		recipe.expensive.results = {{type = "item", name = recipe.expensive.result, amount = recipe.expensive.result_count}}
 	end
+end
+
+function addRecipeProduct(recipe, item, amountnormal, amountexpensive, addIfPresent)
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then error(serpent.block("No such recipe found!")) end
+	convertRecipeToResultTable(recipe)
 	if recipe.results then
 		addIngredientToList(recipe.results, item, amountnormal, addIfPresent)
 	end
@@ -634,10 +638,18 @@ function createConversionRecipe(from, to, register, tech, recursion)
 		error("Cannot create a conversion recipe to a recipe that has no output!" .. serpent.block(rec2))
 	end
 	
+	local out = getItemByName(result)
+	
+	if not out then
+		error("Cannot create a conversion recipe to an item that does not exist!" .. serpent.block(rec2))
+	end
+	
+	local itemType = out.type
+	
 	ret.localised_name = {"conversion-recipe.name", {"entity-name." .. main}, {"entity-name." .. result}}
 	local orig_icon_src = rec2
 	if not (orig_icon_src.icon or orig_icon_src.icons) then
-		orig_icon_src = data.raw.item[result]
+		orig_icon_src = data.raw[itemType][result]
 	end
 	if not (orig_icon_src.icon or orig_icon_src.icons) then
 		error("Could not find an icon for " .. rec2.name .. ", in either the recipe or its produced item! This item is invalid and would have crashed the game anyways!")
@@ -646,8 +658,8 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	local icosz = orig_icon_src.icon_size and orig_icon_src.icon_size or orig_icon_src.icons[1].icon_size
 	ret.icons = {{icon = ico, icon_size = icosz}, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32}}
 	if not ret.icon then
-		if data.raw.item[result] then
-			ret.icon = data.raw.item[result].icon
+		if data.raw[itemType][result] then
+			ret.icon = data.raw[itemType][result].icon
 		else
 			log("Could not create icon for conversion recipe '" .. name .. "'! No such item '" .. result .. "'")
 		end
@@ -671,7 +683,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 			end
 		end
 		ret.result = nil
-		ret.subgroup = data.raw.item[result].subgroup
+		ret.subgroup = data.raw[itemType][result].subgroup
 	end
 	if ret.normal then
 		ret.normal.ingredients = norm
@@ -694,7 +706,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 				end
 			end
 			ret.normal.result = nil
-			ret.subgroup = data.raw.item[result].subgroup
+			ret.subgroup = data.raw[itemType][result].subgroup
 		end
 	end
 	if ret.expensive then
@@ -718,7 +730,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 				end
 			end
 			ret.expensive.result = nil
-			ret.subgroup = data.raw.item[result].subgroup
+			ret.subgroup = data.raw[itemType][result].subgroup
 		end
 	end
 	

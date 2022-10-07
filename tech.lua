@@ -194,3 +194,27 @@ function replaceTechPack(tech, old, new, factor)
 	log("Replaced science pack " .. old .. " with " .. new .. " in tech '" .. tech.name .. "'")
 	return flag
 end
+
+function tryFindTechUnlocking(proto)
+	for name,tech in pairs(data.raw.technology) do
+		if tech.effects then
+			for _,eff in pairs(tech.effects) do
+				if eff.type == "unlock-recipe" then
+					local rec = data.raw.recipe[eff.recipe]
+					if rec and not (string.find(rec.name, "barrel", 1, true) or string.find(rec.name, "canister", 1, true)) then
+						if rec.result and rec.result.name and rec.result.name == proto.name then
+							return tech
+						elseif rec.results then
+							for _,out in pairs(rec.results) do
+								if out and out.name and out.type and out.type == proto.type and out.name == proto.name then
+									return tech
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil
+end

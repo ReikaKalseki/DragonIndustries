@@ -1,4 +1,5 @@
 function convertColor(argb, divideBy)
+	if not argb then error("Null color") end
 	local blue = bit32.band(argb, 255)
 	local green = bit32.band(bit32.rshift(argb, 8), 255)
 	local red = bit32.band(bit32.rshift(argb, 16), 255)

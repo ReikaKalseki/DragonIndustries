@@ -30,6 +30,7 @@ local function calculateColor(tile)
 end
 
 function getColorsForTile(tile)
+	if not tile.valid then return ALL_COLORS end
 	if string.find(tile.name, "water") then
 		return ALL_COLORS,true --need some way to prevent rainbow water
 	end
