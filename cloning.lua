@@ -49,14 +49,14 @@ local function createCircuitConnections()
 	return ret
 end
 
-function createFixedSignalAnchor(name)
+function createFixedSignalAnchor(name, spr)
 	local obj = copyObject("constant-combinator", "constant-combinator", name)
 	
 	obj.sprites = {
-      north = createCircuitSprite(),
-      west = createCircuitSprite(),
-      east = createCircuitSprite(),
-      south = createCircuitSprite(),
+      north = createCircuitSprite(spr),
+      west = createCircuitSprite(spr),
+      east = createCircuitSprite(spr),
+      south = createCircuitSprite(spr),
     }
 
     obj.activity_led_sprites = {
@@ -81,6 +81,7 @@ function createFixedSignalAnchor(name)
 	obj.minable = nil
 	obj.order = "z"
 	obj.flags = {"placeable-neutral", "player-creation", "not-on-map", "placeable-off-grid", "not-blueprintable", "not-deconstructable"}
+	obj.selection_priority = 254
 	
 	return obj
 end

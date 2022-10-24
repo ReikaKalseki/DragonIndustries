@@ -13,8 +13,7 @@ end
 
 function getItemByName(name)
 	if game then return game.item_prototypes[name] end
-	local keys = {"item", "tool", "ammo", "repair-tool", "selection-tool", "item-with-entity-data", "capsule", "armor", "module", "gun"}
-	for _,k in pairs(keys) do
+	for k,v in pairs(defines.prototypes.item) do
 		if data.raw[k][name] then
 			return data.raw[k][name]
 		end

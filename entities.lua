@@ -26,6 +26,12 @@ function addCategoryResistance(category, type_, reduce, percent)
 end
 
 function addResistance(category, name, type_, reduce, percent)
+	if type(type_) == "table" then
+		for _,tt in pairs(type_) do
+			addResistance(category, name, tt, reduce, percent)
+		end
+		return
+	end
 	if not reduce then reduce = 0 end
 	if not percent then percent = 0 end
 	if data.raw["damage-type"][type_] == nil then
