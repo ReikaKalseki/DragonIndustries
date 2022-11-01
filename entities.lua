@@ -1,5 +1,23 @@
 require "strings"
 
+local inventoryTypes = {
+	["character"] = defines.inventory.character_main,
+	["chest"] = defines.inventory.chest,
+	["cargo-wagon"] = defines.inventory.cargo_wagon,
+	["boiler"] = defines.inventory.fuel,
+	["nuclear-reactor"] = defines.inventory.fuel,
+	["locomotive"] = defines.inventory.fuel,
+	["assembling-machine"] = defines.inventory.assembling_machine_input,
+	["furnace"] = defines.inventory.furnace_source,
+	["roboport"] = defines.inventory.roboport_robot,
+	["lab"] = defines.inventory.lab_input,
+	["car"] = defines.inventory.car_trunk,
+	["ammo-turret"] = defines.inventory.turret_ammo,
+	["artillery-turret"] = defines.inventory.artillery_turret_ammo,
+	["artillery-wagon"] = defines.inventory.artillery_wagon_ammo,
+	["beacon"] = defines.inventory.beacon_modules,
+}
+
 function getObjectTier(proto)
 	--return splitAfter(proto.name, "%-")
 	local val = 1
@@ -160,3 +178,12 @@ entityCategories = {
     "sticker",
     "tile-ghost",
 }
+
+function getPrimaryInventory(entity)
+	local type = inventoryTypes[entity.type]
+	if type then
+		return entity.get_inventory(type)
+	else
+		return nil
+	end
+end

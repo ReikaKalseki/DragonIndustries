@@ -2,11 +2,11 @@ require "arrays"
 require "items"
 require "mathhelper"
 
-function parseIngredient(entry)
+function parseIngredient(entry, toFull)
 	local type = entry.name and entry.name or entry[1]
 	local amt = entry.amount and entry.amount or entry[2]
 	local form = getItemType(type)
-	return {type, amt, form}
+	return toFull and {name=type, amount=amt, type=form} or {type, amt, form}
 end
 
 function changeRecipeTime(recipe, factor, delta)
@@ -323,6 +323,7 @@ end
 function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPresent)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end
+	if not item then error("Tried to add null item!") end
 	if not data.raw.item[item] then error("No such item '" .. item .. "'!") end
 	log("Adding '" .. item .. "' x" .. amountnormal .. " to recipe '" .. recipe.name .. "'")
 	if recipe.ingredients then
