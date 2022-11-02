@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.148.1
+Date: Oct 31 2022
+	- "Signal Anchor" type entities (eg EGCombat shield dome connections, DirtyMining ore washer connections) now render and select on top of all other entities
+	- Fixed getItemByName missing some item types
+	- Expanded inventory helper
+	- Added prefab "tier" 1-5 overlay icons
+---------------------------------------------------------------------------------------------------
+Version: 1.144.1
+Date: Oct 7 2022
+	- Fixed some error states in recipe editing functions when mods change recipes
+	- Fixed invalid tile error in biome color calculation
+	- Made recipe parsing more robust
+	- Added tech unlocks to the various ingredient fluids
+---------------------------------------------------------------------------------------------------
 Version: 1.101.1
 Date: Mar 25 2021
 	- Update to 1.1

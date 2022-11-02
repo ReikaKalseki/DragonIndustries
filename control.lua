@@ -11,6 +11,8 @@ end
 
 script.on_configuration_changed(function()
 	initGlobal(true)
+	
+	
 end)
 
 script.on_init(function()
