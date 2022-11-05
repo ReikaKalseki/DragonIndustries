@@ -165,9 +165,11 @@ function splitRecipeToNormalExpensive(recipe)
 	recipe.energy_required = nil
 end
 
-function addIngredientToList(list, item, amount, addIfPresent)
+function addIngredientToList(list, item, amount, addIfPresent, catalyst)
 	local added = false
-	log("Inserting recipe item " .. item .. " x " .. amount)
+	local itype = type(item) == "table" and item.type or "item"
+	local name = type(item) == "table" and item.name or item
+	log("Inserting recipe item " .. itype .. "/" .. name .. " x " .. amount)
 	for _,ing in pairs(list) do
 		local parse = parseIngredient(ing)
 		--log(serpent.block(parse))
@@ -186,7 +188,9 @@ function addIngredientToList(list, item, amount, addIfPresent)
 		end
 	end
 	if not added then
-		table.insert(list, {type = "item", name = item, amount = amount})
+		local add = {type = itype, name = name, amount = amount}
+		if catalyst then add.catalyst = catalyst end
+		table.insert(list, add)
 	end
 end
 
@@ -320,21 +324,23 @@ function removeItemFromRecipe(recipe, item)
 	end
 end
 
-function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPresent)
+function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPresent, catalyst)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end
 	if not item then error("Tried to add null item!") end
-	if not data.raw.item[item] then error("No such item '" .. item .. "'!") end
-	log("Adding '" .. item .. "' x" .. amountnormal .. " to recipe '" .. recipe.name .. "'")
+	local find = data.raw.item[item]
+	if not find then find = data.raw.fluid[item] end
+	if not find then error("No such item '" .. item .. "'!") end
+	log("Adding '" .. find.name .. "' x" .. amountnormal .. " to recipe '" .. recipe.name .. "'")
 	if recipe.ingredients then
-		addIngredientToList(recipe.ingredients, item, amountnormal, addIfPresent)
+		addIngredientToList(recipe.ingredients, find, amountnormal, addIfPresent, catalyst)
 	end
 	if recipe.normal and recipe.normal.ingredients then
-		addIngredientToList(recipe.normal.ingredients, item, amountnormal, addIfPresent)
+		addIngredientToList(recipe.normal.ingredients, find, amountnormal, addIfPresent, catalyst)
 	end
 	if recipe.expensive and recipe.expensive.ingredients then
 		local amt = amountexpensive and amountexpensive or amountnormal
-		addIngredientToList(recipe.expensive.ingredients, item, amt, addIfPresent)
+		addIngredientToList(recipe.expensive.ingredients, find, amt, addIfPresent, catalyst)
 	end
 end
 
