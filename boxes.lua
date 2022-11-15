@@ -32,3 +32,7 @@ function intersects(box1, box2)
     if box1.left_top.y > box2.right_bottom.y then return false end -- box1 is below box2
     return true -- boxes overlap
 end
+
+function getRadiusAABB(entity, r)
+	return {{entity.position.x-r, entity.position.y-r}, {entity.position.x+r, entity.position.y+r}}
+end

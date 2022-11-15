@@ -40,3 +40,8 @@ end
 function stringStartsWith(str, seek)
 	return string.sub(str, 1, string.len(seek)) == seek
 end
+
+function stringEndsWith(str, seek)
+	return string.sub(str, -#seek) == seek
+
+end

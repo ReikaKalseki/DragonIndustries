@@ -9,7 +9,7 @@ function initGlobal(markDirty)
 	di.dirty = markDirty
 end
 
-script.on_configuration_changed(function()
+script.on_configuration_changed(function(data)
 	initGlobal(true)
 	
 	

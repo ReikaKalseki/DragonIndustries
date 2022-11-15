@@ -53,10 +53,10 @@ function createFixedSignalAnchor(name, spr)
 	local obj = copyObject("constant-combinator", "constant-combinator", name)
 	
 	obj.sprites = {
-      north = createCircuitSprite(spr),
-      west = createCircuitSprite(spr),
-      east = createCircuitSprite(spr),
-      south = createCircuitSprite(spr),
+      north = createCircuitSprite(),
+      west = createCircuitSprite(),
+      east = createCircuitSprite(),
+      south = createCircuitSprite(),
     }
 
     obj.activity_led_sprites = {

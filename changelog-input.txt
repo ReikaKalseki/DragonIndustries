@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.152.1
+Date: Nov 15 2022
+	- Added many library functions
+	- Major code cleanup
+	- Productivity now applies to the DI intermediate fluid recipes
+	- Fixed issue with conversion recipes from null not being properly detected
+	- Added code to avoid duplicates when injecting new items into existing recipes
+---------------------------------------------------------------------------------------------------
+Version: 1.151.1
+Date: Nov 5 2022
+	- Added sanity checking to recipe functions
+---------------------------------------------------------------------------------------------------
 Version: 1.148.1
 Date: Oct 31 2022
 	- "Signal Anchor" type entities (eg EGCombat shield dome connections, DirtyMining ore washer connections) now render and select on top of all other entities

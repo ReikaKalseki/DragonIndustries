@@ -18,6 +18,7 @@ function getItemByName(name)
 			return data.raw[k][name]
 		end
 	end
+	log("Could not find item '" .. name .. "'")
 end
 
 function getItemCategory(item)

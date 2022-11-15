@@ -19,6 +19,8 @@ function changeRecipeTime(recipe, factor, delta)
 	end
 end
 
+---@param recipe table|string
+---@param item string
 function getRecipeCost(recipe, item)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if recipe.normal and recipe.normal.ingredients then
@@ -60,6 +62,7 @@ function recipeStartsEnabled(recipe)
 	end
 end
 
+---@return string|table
 function getRecipeOutput(recipe)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end
@@ -78,6 +81,9 @@ function getRecipeOutput(recipe)
 	error("Recipe '" .. recipe.name .. "' has no output!")
 end
 
+---@param recipe table
+---@param item string
+---@return boolean
 function recipeProduces(recipe, item)
 	--log("Checking outputs of recipe '" .. recipe.name .. "' for '" .. item .. "'")
 	local out = getRecipeOutput(recipe)
@@ -86,6 +92,7 @@ function recipeProduces(recipe, item)
 		for _,e in pairs(out) do
 			if listHasValue(e, item) then return true end
 		end
+		return false
 	else
 		return out == item
 	end
@@ -165,21 +172,30 @@ function splitRecipeToNormalExpensive(recipe)
 	recipe.energy_required = nil
 end
 
+---@param list table
+---@param item string
+---@param amount number
+---@param addIfPresent? boolean
+---@param catalyst? boolean
 function addIngredientToList(list, item, amount, addIfPresent, catalyst)
 	local added = false
 	local itype = type(item) == "table" and item.type or "item"
 	local name = type(item) == "table" and item.name or item
 	log("Inserting recipe item " .. itype .. "/" .. name .. " x " .. amount)
 	for _,ing in pairs(list) do
-		local parse = parseIngredient(ing)
+		local parse = parseIngredient(ing, true)
 		--log(serpent.block(parse))
-		if parse[1] == item then
+		if parse.name == item then
 			--log("Match")
 			if addIfPresent then
 				if ing.amount then
-					ing.amount = parse[2]+amount
+					ing.amount = parse.amount+amount
 				else
-					ing[2] = parse[2]+amount
+					if ing.amount then
+						ing.amount = parse.amount+amount
+					else
+						ing[2] = parse.amount+amount
+					end
 				end
 				--log("Adding " .. amount .. " to " .. serpent.block(ing))
 			end
@@ -324,6 +340,12 @@ function removeItemFromRecipe(recipe, item)
 	end
 end
 
+---@param recipe table|string
+---@param item string
+---@param amountnormal number
+---@param amountexpensive? number
+---@param addIfPresent? boolean
+---@param catalyst? boolean
 function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPresent, catalyst)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then error(serpent.block("No such recipe found!")) end
@@ -344,6 +366,11 @@ function addItemToRecipe(recipe, item, amountnormal, amountexpensive, addIfPrese
 	end
 end
 
+---@param recipe table|string
+---@param item string
+---@param recipeRef string|table
+---@param ratio number
+---@param addIfPresent? boolean
 function addRecipeIngredientToRecipe(recipe, item, recipeRef, ratio, addIfPresent)
 	local cost = getRecipeCost(recipeRef, item)
 	if cost == nil then cost = 0 end
@@ -373,10 +400,10 @@ function moveRecipe(recipe, from, to)
 	table.insert(tech2.effects, {type = "unlock-recipe", recipe = recipe})
 end
 
-function lockRecipe(recipe, tech)
+function lockRecipe(recipe, from)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then return end
-	local tech = data.raw.technology[tech]
+	local tech = data.raw.technology[from]
 	if not tech then error("Tech '" .. from .. "' does not exist!") end
 	if not tech.effects then tech.effects = {} end
 	table.insert(tech.effects, {type = "unlock-recipe", recipe = recipe.name})
@@ -482,6 +509,7 @@ local function buildRecipeDifference(name1, name2, list1, list2, form, recursion
 	return ret
 end
 
+---@param recipe table
 local function createRecipeProfile(recipe)
     return
     {
@@ -492,6 +520,7 @@ local function createRecipeProfile(recipe)
     }
 end
 
+---@param recipe table|string
 local function swapRecipeIO(recipe)
 	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
 	if not recipe then return end
@@ -511,6 +540,8 @@ local function swapRecipeIO(recipe)
 	recipe.results = temp
 end
 
+---@param recipe table
+---@param ref table
 function createUncraftingRecipe(recipe, ref)
 	local ret = table.deepcopy(recipe)
 	swapRecipeIO(ret)
@@ -524,9 +555,15 @@ function createUncraftingRecipe(recipe, ref)
 	return ret
 end
 
+---@param from string|table
+---@param to string|table
+---@param register? boolean
+---@param tech? string|table
+---@param recursion? table
 function createConversionRecipe(from, to, register, tech, recursion)
-	local rec1 = data.raw.recipe[from]
-	local rec2 = data.raw.recipe[to]
+	local rec1 = type(from) == "table" and from or data.raw.recipe[from]
+	local rec2 = type(to) == "table" and from or data.raw.recipe[to]
+	if tech and type(tech) == "table" then tech = tech.name end
 	
 	if not rec1 then
 		error("No such recipe '" .. from .. "'!")
@@ -567,7 +604,7 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	
 	local prev = rec1.expensive and rec1.expensive.result or rec1.result
 	if not prev then
-		local list = rec1.results and rec1.results or rec1.expensive.results
+		local list = rec1.results and rec1.results or rec1.expensive.results --[[@as table]]
 		for _,res in pairs(list) do
 			if res.type == "item" then
 				prev = res.name
@@ -578,21 +615,21 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	
 	if rec1.ingredients and rec2.ingredients then
 		list = buildRecipeDifference(from, to, rec1.ingredients, rec2.ingredients, "basic", recursion)
-		e_list = buildRecipeSurplus(from, to, rec1.ingredients, rec2.ingredients, "basic", recursion)
+		e_list = buildRecipeSurplus(from, to, rec1.ingredients, rec2.ingredients)
 	end
 	
 	if rec1.expensive or rec2.expensive then
 		local exp1 = rec1.expensive and rec1.expensive.ingredients or rec1.ingredients
 		local exp2 = rec2.expensive and rec2.expensive.ingredients or rec2.ingredients
 		exp = buildRecipeDifference(from, to, exp1, exp2, "expensive", recursion)
-		e_exp = buildRecipeSurplus(from, to, exp1, exp2, "expensive", recursion)
+		e_exp = buildRecipeSurplus(from, to, exp1, exp2)
 	end
 	
 	if rec1.normal or rec2.normal then
 		local norm1 = rec1.normal and rec1.normal.ingredients or rec1.ingredients
 		local norm2 = rec2.normal and rec2.normal.ingredients or rec2.ingredients
 		norm = buildRecipeDifference(from, to, norm1, norm2, "normal", recursion)
-		e_norm = buildRecipeSurplus(from, to, norm1, norm2, "normal", recursion)
+		e_norm = buildRecipeSurplus(from, to, norm1, norm2)
 	end
 	
 	if prev then
@@ -655,10 +692,10 @@ function createConversionRecipe(from, to, register, tech, recursion)
 	
 	ret.localised_name = {"conversion-recipe.name", {"entity-name." .. main}, {"entity-name." .. result}}
 	local orig_icon_src = rec2
-	if not (orig_icon_src.icon or orig_icon_src.icons) then
+	if (not (orig_icon_src.icon or orig_icon_src.icons)) and data.raw[itemType][result] then
 		orig_icon_src = data.raw[itemType][result]
 	end
-	if not (orig_icon_src.icon or orig_icon_src.icons) then
+	if not (orig_icon_src and (orig_icon_src.icon or orig_icon_src.icons)) then
 		error("Could not find an icon for " .. rec2.name .. ", in either the recipe or its produced item! This item is invalid and would have crashed the game anyways!")
 	end
 	local ico = orig_icon_src.icon and orig_icon_src.icon or orig_icon_src.icons[1].icon
@@ -842,4 +879,30 @@ function streamlineRecipeOutputWithRecipe(recipe, with, main, skipError)
 	end
 	changeItemCountInRecipe(recipe, with, -1, skipError)
 	--log(serpent.block(recipe))
+end
+
+---@param item string|table
+function markItemForProductivityAllowed(item)
+	if type(item) == "string" then item = getItemByName(item) end
+	if not item then error("No such item '" .. item .. "'") end
+	log("Adding item '" .. item.name .. "' to the valid-with-productivity list")
+	for name,recipe in pairs(data.raw.recipe) do
+		if recipeProduces(recipe, item.name) then
+			markForProductivityAllowed(recipe)
+		end
+	end
+end
+
+---@param recipe string|table
+function markForProductivityAllowed(recipe)
+	local arg = recipe
+	if type(recipe) == "string" then recipe = data.raw.recipe[recipe] end
+	if not recipe then error("No such recipe '" .. arg .. "'") end
+	--if not recipe.allow_as_intermediate then log("Skipping productivity allowance on uncraft/upgrade recipe to prevent exploits: " .. recipe.name) return end
+	for name,module in pairs(data.raw.module) do
+		if module.effect and module.effect["productivity"] and module.limitation and getTableSize(module.limitation) > 0 then
+			log("Adding recipe '" .. recipe.name .. "' to the valid-with-productivity list on '" .. name .. "'")
+			table.insert(module.limitation, recipe.name)
+		end
+	end
 end

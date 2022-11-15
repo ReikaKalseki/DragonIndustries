@@ -22,19 +22,9 @@ function hasCollisionMask(object, mask)
 	return object.prototype and object.prototype.collision_mask[mask]
 end
 
-function areTablesEqual(t1, t2)
-	if #t1 ~= #t2 then return false end
-	for i,e in ipairs(t1) do
-		if type(e) == "table" then
-			if not areTablesEqual(e, t2[i]) then return false end
-		else
-			if t2[i] ~= e then return false end
-		end
-	end
-	return true
-end
-
 function getTableSize(val)
+	if not val then return -1 end
+	if type(val) ~= "table" then error("Value '" .. serpent.block(val) .. "' is not a table!") end
 --[[
 	local count = 0
 	for key,num in pairs(val) do
@@ -43,6 +33,18 @@ function getTableSize(val)
 	return count
 	--]]
 	return table_size(val)
+end
+
+function areTablesEqual(t1, t2)
+	if getTableSize(t1) ~= getTableSize(t2) then return false end
+	for i,e in ipairs(t1) do
+		if type(e) == "table" then
+			if not areTablesEqual(e, t2[i]) then return false end
+		else
+			if t2[i] ~= e then return false end
+		end
+	end
+	return true
 end
 
 

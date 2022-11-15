@@ -49,7 +49,7 @@ function getPerpendicularDirection(dir) --direction is a number from 0 to 7
 end
 
 function sigFig(num, figures)
-    local x = figures - math.ceil(math.log10(math.abs(num)))
+    local x = figures - math.ceil(math.log(math.abs(num), 10))
     return (math.floor(num*10^x+0.5)/10^x)
 end
 
@@ -77,6 +77,9 @@ function getCustomWeightedRandom(values, randFunc)
 	return 0
 end
 
+---@generic T
+---@param vals table(T)
+---@return T
 function getWeightedRandom(vals)
 	local sum = 0
 	for _,entry in pairs(vals) do
