@@ -310,9 +310,10 @@ end
 ---@param from string|data.RecipePrototype
 ---@param to string|data.RecipePrototype
 ---@param recursionSet? table
+---@param scaleInput? boolean
 ---@return table, table
- --returns {to-from, from-to}, ie the cost to go from 1 to 2, followed by anything costed by 1 but not 2; to-from = to_cost-from_cost+from_output
-local function buildDifferences(from, to, recursionSet)
+ --returns {to-from, from-to}, ie the cost to go from 1 to 2, followed by anything costed by 1 but not 2; to-from = to_cost-from_cost+from_output (including the "new" output of from!)
+local function buildDifferences(from, to, recursionSet, scaleInput)
 	local rec1 = lookupRecipe(from)
 	local rec2 = lookupRecipe(to)
 	
@@ -322,14 +323,34 @@ local function buildDifferences(from, to, recursionSet)
 	local out1 = buildRecipeCostTable(rec1.results)
 	--local out2 = buildRecipeCostTable(rec2.results)
 
+	local n = 1
+	if scaleInput then
+		n = 9999
+		for item,cost in pairs(cost1) do
+			n = math.min(n, math.floor(cost2[item]/cost))
+			--fmtlog("%s: %s-%s -> %s", item, cost2[item], cost, n)
+		end
+
+		if n > 1 then
+			for item,cost in pairs(cost1) do	
+				cost1[item] = cost1[item]*n
+			end
+			for item,cost in pairs(out1) do
+				out1[item] = out1[item]*n
+			end
+		end
+	end
+
+	for item,cost in pairs(out1) do
+		addToCostTable(cost2, buildIngredient(item, cost))
+	end
+
 	local diff1 = {}
 	local diff2 = {}
 	for item,cost in pairs(cost2) do
 		local sub = cost1[item]
 		if not sub then sub = 0 end
-		local add = out1[item]
-		if not add then add = 0 end
-		local net = cost-sub+add
+		local net = cost-sub
 		if net > 0 then
 			diff1[item] = net
 		end
@@ -342,8 +363,10 @@ local function buildDifferences(from, to, recursionSet)
 			diff2[item] = net
 		end
 	end
+
+	--fmterror("Computed %s for %s-%s*%s+%s -> %s", n, rec2.ingredients, n, rec1.ingredients, rec1.results, diff1)
 	
-	return diff1, diff2
+	return diff1, diff2, n
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -393,13 +416,16 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 		end
 	end
 	
-	local cost, extra = buildDifferences(rec1, rec2, recursionSet)
+	local cost, extra, n = buildDifferences(rec1, rec2, recursionSet, true)
 
-	if cost == nil or #cost == 0 then fmterror("Could not compute cost of conversion recipe %s - delta from '%s' to '%s' yielded nothing (%s - %s)", name, rec1.name, rec2.name, rec2.ingredients, rec1.ingredients) end
+	if cost == nil or getTableSize(cost) == 0 then fmterror("Could not compute cost of conversion recipe %s - delta from '%s' to '%s' yielded nothing (%s - %s*%s)", name, rec1.name, rec2.name, rec2.ingredients, n, rec1.ingredients) end
 	
 	local ret = table.deepcopy(rec2)
 	ret.name = name
-	ret.ingredients = cost
+	ret.ingredients = {}
+	for item,amt in pairs(cost) do
+		table.insert(ret.ingredients, buildIngredient(item, amt))
+	end
 	
 	if data.raw.item["basic-circuit-board"] then
 		replaceItemInRecipe(ret, "electronic-circuit", "basic-circuit-board", 1, true)
@@ -414,8 +440,8 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	local itemType = mainProduct.type
 
 	if extra then
-		for _,item in pairs(extra) do
-			table.insert(rec2.results, item)
+		for item,amt in pairs(extra) do
+			table.insert(ret.results, buildIngredient(item, amt))
 		end
 	end
 
@@ -423,16 +449,22 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	
 	ret.subgroup = data.raw[itemType][result].subgroup
 	
-	ret.localised_name = {"conversion-recipe.name", {"recipe-name." .. rec1.name}, {"recipe-name." .. rec2.name}}
+	ret.localised_name = {"conversion-recipe.name", {"?", {"recipe-name." .. rec1.name}, {"item-name." .. fromItem}, {"entity-name." .. fromItem}}, {"?", {"recipe-name." .. rec2.name}, {"item-name." .. result}, {"entity-name." .. result}}}
 
-	local icons = {}
-	appendIcons(icons, mainFrom)
-	appendIcons(icons, mainProduct)
-	table.insert(icons, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32})
+	ret.icons = {}
+	appendIcons(ret.icons, mainFrom)
+	appendIcons(ret.icons, mainProduct)
+	ret.icons[1].scale=0.5
+	ret.icons[1].shift={-ret.icons[1].icon_size/2, -ret.icons[1].icon_size/2}
+	ret.icons[2].scale=0.5
+	ret.icons[2].shift={ret.icons[1].icon_size/2, ret.icons[1].icon_size/2}
+	table.insert(ret.icons, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32})
 	
 	ret.allow_decomposition = false
 	ret.allow_as_intermediate = false
 	ret.allow_intermediates = false
+
+	fmtlog("Conversion recipe %s created with cost %s (%s - %s*%s)", name, ret.ingredients, rec2.ingredients, n, rec1.ingredients)
 	
 	if register then
 		data:extend({ret})
