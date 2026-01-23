@@ -267,18 +267,31 @@ function swapSprites(obj1, obj2)
 	swapObjSpriteField(obj1, obj2, "variants")
 end
 
+
+---@param icon table
+---@param scale number
+---@param expectedSize? int32
+function rescaleIcon(icon, scale, expectedSize)
+	if not expectedSize then expectedSize = 64 end
+	if icon.scale then
+		icon.scale = icon.scale*scale
+	else
+		icon.scale = scale*(expectedSize / 2) / (icon.icon_size and icon.icon_size or expectedSize)
+	end
+end
+
+
 ---@param ret table
 ---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype
----@return table
 function appendIcons(ret, object)
 		if object.icon then
-			table.insert(ret, {icon = object.icon, icon_size = object.icon_size and object.icon_size or 32})
+			table.insert(ret, {icon = object.icon, icon_size = object.icon_size and object.icon_size or 64})
 		elseif object.icons then
 			for _,i in pairs(object.icons) do
 				table.insert(ret, i)
 			end
 		else
-			error(string.format("%s '%s' has no icons specified!", object.type, object.name))
+			fmterror("%s '%s' has no icons specified!", object.type, object.name)
 		end
 	end
 

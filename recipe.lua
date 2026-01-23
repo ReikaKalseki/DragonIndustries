@@ -311,7 +311,7 @@ end
 ---@param to string|data.RecipePrototype
 ---@param recursionSet? table
 ---@param scaleInput? boolean
----@return table, table
+---@return table, table, int32
  --returns {to-from, from-to}, ie the cost to go from 1 to 2, followed by anything costed by 1 but not 2; to-from = to_cost-from_cost+from_output (including the "new" output of from!)
 local function buildDifferences(from, to, recursionSet, scaleInput)
 	local rec1 = lookupRecipe(from)
@@ -394,6 +394,12 @@ function createUncraftingRecipe(recipe, ref)
 	return ret
 end
 
+---@param recipe string|data.RecipePrototype
+---@return table
+function getRecipeLocale(recipe)
+	return recipe.localised_name and recipe.localised_name or {"?", {"recipe-name." .. recipe.name}, {"item-name." .. recipe.results[1].name}, {"entity-name." .. recipe.results[1].name}}
+end
+
 ---@param from string|data.RecipePrototype
 ---@param to string|data.RecipePrototype
 ---@param register? boolean
@@ -449,15 +455,20 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	
 	ret.subgroup = data.raw[itemType][result].subgroup
 	
-	ret.localised_name = {"conversion-recipe.name", {"?", {"recipe-name." .. rec1.name}, {"item-name." .. fromItem}, {"entity-name." .. fromItem}}, {"?", {"recipe-name." .. rec2.name}, {"item-name." .. result}, {"entity-name." .. result}}}
+	--ret.localised_name = {"conversion-recipe.name", {"?", {"recipe-name." .. rec1.name}, {"item-name." .. fromItem}, {"entity-name." .. fromItem}}, {"?", {"recipe-name." .. rec2.name}, {"item-name." .. result}, {"entity-name." .. result}}}
+	
+	ret.localised_name = {"conversion-recipe.name", getRecipeLocale(rec1), getRecipeLocale(rec2)}
+	ret.energy_required = math.max(1, rec2.energy_required-rec1.energy_required*n)
 
 	ret.icons = {}
 	appendIcons(ret.icons, mainFrom)
 	appendIcons(ret.icons, mainProduct)
-	ret.icons[1].scale=0.5
-	ret.icons[1].shift={-ret.icons[1].icon_size/2, -ret.icons[1].icon_size/2}
-	ret.icons[2].scale=0.5
-	ret.icons[2].shift={ret.icons[1].icon_size/2, ret.icons[1].icon_size/2}
+	rescaleIcon(ret.icons[1], 0.75)
+	ret.icons[1].shift={-10, -10}
+	rescaleIcon(ret.icons[2], 0.75)
+	ret.icons[2].shift={8, 8}
+	ret.icons[1].floating = true
+	ret.icons[2].floating = true
 	table.insert(ret.icons, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32})
 	
 	ret.allow_decomposition = false
