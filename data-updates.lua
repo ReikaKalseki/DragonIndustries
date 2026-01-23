@@ -124,7 +124,7 @@ local function addFluid(name, color, amt, ingredients, byproducts, time, tech)
 		end
 	end
 end
-
+--[[
 if data.raw.fluid["hydrogen"] and data.raw.fluid["oxygen"] and data.raw.item["carbon"] then --name, amt, ingredients, byproducts, time
 	addFluid("carbon-dioxide", 0xD8ADAD)
 	addFluid("isopropanol", 0xB5E5FF, 20, {{"sulfuric-acid", 2}, {"water", 20}, {"petroleum-gas", 30}}, {{"sulfuric-acid", 2}}, 1, "sulfur-processing")
@@ -143,3 +143,4 @@ if data.raw.fluid["hydrogen"] and data.raw.fluid["oxygen"] and data.raw.item["ca
 	addRecipe("ethanol", 20, {{"wood", 4}, {"water", 10}}, {{"carbon-dioxide", 20}}, 60)
 	addFluid("acetic-acid", 0xF6FF93, 10, {{"ethanol", 10}, {"oxygen", 10}}, {{"water", 10}}, 1)
 end
+--]]

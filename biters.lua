@@ -18,14 +18,11 @@ function getPossibleBiters(curve, evo)
 				if interp > 0 then
 					table.insert(ret, {biter, interp+totalWeight})
 					totalWeight = totalWeight+interp
-					--game.print("Adding " .. biter .. " with weight " .. interp)
 				end
 				break
 			end
 		end
 	end
-	--game.print("Fake Evo " .. evo)
-	--for i=1,#ret do game.print(ret[i][1] .. ": " .. ((i == 1 and 0 or ret[i-1][2]) .. " -> " .. ret[i][2])) end
 	return ret, totalWeight
 end
 

@@ -7,8 +7,8 @@ local inventoryTypes = {
 	["boiler"] = defines.inventory.fuel,
 	["nuclear-reactor"] = defines.inventory.fuel,
 	["locomotive"] = defines.inventory.fuel,
-	["assembling-machine"] = defines.inventory.assembling_machine_input,
-	["furnace"] = defines.inventory.furnace_source,
+	["assembling-machine"] = defines.inventory.crafter_input,
+	["furnace"] = defines.inventory.crafter_input,
 	["roboport"] = defines.inventory.roboport_robot,
 	["lab"] = defines.inventory.lab_input,
 	["car"] = defines.inventory.car_trunk,
@@ -17,6 +17,11 @@ local inventoryTypes = {
 	["artillery-wagon"] = defines.inventory.artillery_wagon_ammo,
 	["beacon"] = defines.inventory.beacon_modules,
 }
+
+function respawnWithQuality(entity, quality)
+	entity.surface.create_entity{name=entity.name, position=entity.position, force=entity.force, quality=quality, direction = entity.direction}
+	entity.destroy()
+end
 
 function getObjectTier(proto)
 	--return splitAfter(proto.name, "%-")
@@ -68,21 +73,6 @@ function convertGhostsNear(player, box) --box may be null, and so it searches th
 	end
 end
 
-function createTotalResistance()
-	local ret = {}
-	for name,damage in pairs(data.raw["damage-type"]) do
-		table.insert(ret, {type = name, percent = 100})
-	end
-	return ret
-end
-
-function addCategoryResistance(category, type_, reduce, percent)
-	if not data.raw[category] then error("No such category '" .. category .. "'!") end
-	for k,v in pairs(data.raw[category]) do
-		addResistance(category, k, type_, reduce, percent)
-	end
-end
-
 function addResistance(category, name, type_, reduce, percent)
 	if type(type_) == "table" then
 		for _,tt in pairs(type_) do
@@ -118,106 +108,6 @@ return
         percent = percent_
 }
 end
-
-entityCategories = {
-    "arrow",
-    "artillery-flare",
-    "artillery-projectile",
-    "beam",
-    "character-corpse",
-    "cliff",
-    "corpse",
-    "rail-remnants",
-    "deconstructible-tile-proxy",
-    "entity-ghost",
-    "accumulator",
-    "artillery-turret",
-    "beacon",
-    "boiler",
-    "burner-generator",
-    "character",
-    "arithmetic-combinator",
-    "decider-combinator",
-    "constant-combinator",
-    "container",
-    "logistic-container",
-    "infinity-container",
-    "assembling-machine",
-    "rocket-silo",
-    "furnace",
-    "electric-energy-interface",
-    "electric-pole",
-    "unit-spawner",
-    "fish",
-    "combat-robot",
-    "construction-robot",
-    "logistic-robot",
-    "gate",
-    "generator",
-    "heat-interface",
-    "heat-pipe",
-    "inserter",
-    "lab",
-    "lamp",
-    "land-mine",
-    "market",
-    "mining-drill",
-    "offshore-pump",
-    "pipe",
-    "infinity-pipe",
-    "pipe-to-ground",
-    "player-port",
-    "power-switch",
-    "programmable-speaker",
-    "pump",
-    "radar",
-    "curved-rail",
-    "straight-rail",
-    "rail-chain-signal",
-    "rail-signal",
-    "reactor",
-    "roboport",
-    "simple-entity",
-    "simple-entity-with-owner",
-    "simple-entity-with-force",
-    "solar-panel",
-    "storage-tank",
-    "train-stop",
-    "loader-1x1",
-    "loader",
-    "splitter",
-    "transport-belt",
-    "underground-belt",
-    "tree",
-    "turret",
-    "ammo-turret",
-    "electric-turret",
-    "fluid-turret",
-    "unit",
-    "car",
-    "artillery-wagon",
-    "cargo-wagon",
-    "fluid-wagon",
-    "locomotive",
-    "wall",
-    "explosion",
-    "flame-thrower-explosion",
-    "fire",
-    "stream",
-    "flying-text",
-    "highlight-box",
-    "item-entity",
-    "item-request-proxy",
-    "particle-source",
-    "projectile",
-    "resource",
-    "rocket-silo-rocket",
-    "rocket-silo-rocket-shadow",
-    "smoke-with-trigger",
-    "speech-bubble",
-    "sticker",
-    "tile-ghost",
-}
 
 function getPrimaryInventory(entity)
 	local type = inventoryTypes[entity.type]

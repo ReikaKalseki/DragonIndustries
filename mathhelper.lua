@@ -40,12 +40,12 @@ function roundToPlaces(num, places)
   return math.floor(num * mult + 0.5) / mult
 end
 
-function getOppositeDirection(dir) --direction is a number from 0 to 7
-	return (dir+4)%8
+function getOppositeDirection(dir) --direction is a number from 0 to 15
+	return (dir+8)%16
 end
 
-function getPerpendicularDirection(dir) --direction is a number from 0 to 7
-	return (dir+2)%8
+function getPerpendicularDirection(dir) --direction is a number from 0 to 15
+	return (dir+4)%16
 end
 
 function sigFig(num, figures)
@@ -80,7 +80,7 @@ end
 ---@generic T
 ---@param vals table(T)
 ---@return T
-function getWeightedRandom(vals)
+function getWeightedRandom(vals, randFunc)
 	local sum = 0
 	for _,entry in pairs(vals) do
 		local weight = entry[1]
@@ -88,7 +88,8 @@ function getWeightedRandom(vals)
 	end
 	
 	--Copied and Luafied from DragonAPI WeightedRandom
-	local d = math.random()*sum;
+	local f = randFunc and randFunc(0, 100)/100 or math.random()
+	local d = f*sum;
 	local p = 0
 	for _,entry in pairs(vals) do
 		p = p + entry[1]

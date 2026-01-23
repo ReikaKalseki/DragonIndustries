@@ -4,17 +4,19 @@ function isWaterTile(tile)
 	return tile.valid and hasCollisionMask(tile, "water-tile")
 end
 
-function isWaterEdge(surface, x, y)
-	if surface.get_tile{x-1, y}.valid and surface.get_tile{x-1, y}.prototype.collision_mask["water-tile"] then
-		return true
+function isTileType(surface, x, y, name)
+	if not surface then return false end
+	if not surface.valid then return false end
+	local tile = surface.get_tile(x, y)
+	if not tile.valid then return false end
+	if type(name) == "table" then
+		for _,seek in pairs(name) do
+			if string.find(tile.name, seek, 1, true) then
+				return true
+			end
+		end
+	else
+		return string.find(tile.name, name, 1, true) ~= nil
 	end
-	if surface.get_tile{x+1, y}.valid and surface.get_tile{x+1, y}.prototype.collision_mask["water-tile"] then
-		return true
-	end
-	if surface.get_tile{x, y-1}.valid and surface.get_tile{x, y-1}.prototype.collision_mask["water-tile"] then
-		return true
-	end
-	if surface.get_tile{x, y+1}.valid and surface.get_tile{x, y+1}.prototype.collision_mask["water-tile"] then
-		return true
-	end
+	return false
 end

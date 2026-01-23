@@ -19,19 +19,12 @@ function getArrayOf(vals, num)
 end
 
 function hasCollisionMask(object, mask)
-	return object.prototype and object.prototype.collision_mask[mask]
+	return object.prototype and object.prototype.collision_mask and object.prototype.collision_mask.layers[mask]
 end
 
 function getTableSize(val)
 	if not val then return -1 end
 	if type(val) ~= "table" then error("Value '" .. serpent.block(val) .. "' is not a table!") end
---[[
-	local count = 0
-	for key,num in pairs(val) do
-		count = count+1
-	end
-	return count
-	--]]
 	return table_size(val)
 end
 
@@ -82,7 +75,7 @@ end
 function listHasValue(list, val)
 	for _,entry in pairs(list) do
 		if type(val) == "table" then
-			log("Checking tables in " .. serpent.block(list))
+			--log("Checking tables in " .. serpent.block(list))
 			if areTablesEqual(entry, val) then return end
 		else
 			if entry == val then return true end
@@ -113,22 +106,5 @@ function getHighestTableKey(list)
 end
 
 function isTableAnArray(t)
-	return #t == getTableSize(t)--[[
-	--are all indices numerical; count for later
-	local count = 0
-	for k,v in pairs(t) do
-		if type(k) ~= "number" then
-			return false
-		else
-			count = count+1
-		end
-	end
-	
-	--check if indices are 1->N in order
-	for i = 1,count do
-		if (not t[i]) and type(t[i]) ~= "nil" then --The value might be nil, have to check the type too
-			return false
-		end
-	end
-	return true--]]
+	return #t == getTableSize(t)
 end

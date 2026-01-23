@@ -18,3 +18,11 @@ function permuteColor(clr, dr, dg, db)
 	clr.b = math.max(0, math.min(255, clr.b+db))
 	return clr
 end
+
+function permuteColorScale(clr, dr, dg, db)
+	clr = table.deepcopy(clr)
+	clr.r = math.max(0, math.min(255, clr.r*dr))
+	clr.g = math.max(0, math.min(255, clr.g*dg))
+	clr.b = math.max(0, math.min(255, clr.b*db))
+	return clr
+end

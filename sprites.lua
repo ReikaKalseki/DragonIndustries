@@ -266,3 +266,51 @@ function swapSprites(obj1, obj2)
 	swapObjSpriteField(obj1, obj2, "off_animation")
 	swapObjSpriteField(obj1, obj2, "variants")
 end
+
+---@param ret table
+---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype
+---@return table
+function appendIcons(ret, object)
+		if object.icon then
+			table.insert(ret, {icon = object.icon, icon_size = object.icon_size and object.icon_size or 32})
+		elseif object.icons then
+			for _,i in pairs(object.icons) do
+				table.insert(ret, i)
+			end
+		else
+			error(string.format("%s '%s' has no icons specified!", object.type, object.name))
+		end
+	end
+
+---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype
+---@param backgrounds? table
+---@param overlays? table
+---@return table
+function makeIconArray(object, backgrounds, overlays)
+		local ret = {}
+		if backgrounds then
+			for _,i in pairs(backgrounds) do
+				table.insert(ret, i)
+			end
+		end
+
+		appendIcons(ret, object)
+		
+		if overlays then
+			for _,i in pairs(overlays) do
+				table.insert(ret, i)
+			end
+		end
+		return ret
+end
+
+---@param items table
+---@return table
+function makeIconArrayForItems(items)
+		local ret = {}
+		
+			for _,o in pairs(items) do
+				appendIcons(ret, o)
+			end
+		return ret
+end

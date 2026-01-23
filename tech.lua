@@ -2,27 +2,18 @@ require "arrays"
 require "mathhelper"
 require "strings"
 
---[[
-local CAMPAIGN_ONLY = {
-	"basic-mining",
-	"basic-electronics",
-	"basic-mapping",
-	"electric-inserter",
-	"basic-logistics",
-	"analyse-ship",
-	"basic-optics",
-	"basic-military",
-	"electric-mining",
-	"active-defense",
-	"repair-tech",
-	"passive-defense",
-	"improved-equipment",
-	"demo-science-pack",
-	"demo-logistics",
-	"demo-productivity-1",
-	"demo-shooting-speed-1",
-}
---]]
+---@param tech string|data.TechnologyPrototype
+---@return data.TechnologyPrototype
+function lookupTech(tech)
+	local ret = nil
+	if type(tech) == "string" then
+		ret = data.raw.technology[tech]
+		if not ret then fmterror("No such technology found: '%s'", tech) end
+	else
+		ret = tech
+	end
+	return ret
+end
 
 function techHasDependencyRecursive(tech, dep, recurse, depth, path, root)
 	if not root then root = tech.name end
@@ -78,24 +69,8 @@ function removeTechUnlock(tech, recipe)
 	end
 end
 
---THIS IS NO LONGER A THING AS OF 0.18'S REVERSION TO THE CAMPAIGN
-function isCampaignOnlyTech(tech)
-	--[[
-	if type(tech) == "string" then
-		tech = data.raw.technology[tech]
-	end
-	if not tech then error(serpent.block("No such technology found! " .. debug.traceback())) end
-	return not tech.enabled--listHasValue(CAMPAIGN_ONLY, tech.name)
-	--]]
-	return false
-end
-
 function getPrereqTechForPack(pack)
 	local tech = data.raw.technology[pack]
-	if pack == "automation-science-pack" and mods["EarlyExtensions"] then
-		--tech = data.raw.technology["basic-science"] --EE compat
-		return "basic-science"
-	end
 	return tech and tech.name or nil
 end
 

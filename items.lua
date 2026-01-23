@@ -12,13 +12,13 @@ function addMineableDropToEntity(proto, drop)
 end
 
 function getItemByName(name)
-	if game then return game.item_prototypes[name] end
+	if prototypes then return prototypes.item[name] end
 	for k,v in pairs(defines.prototypes.item) do
 		if data.raw[k][name] then
 			return data.raw[k][name]
 		end
 	end
-	log("Could not find item '" .. name .. "'")
+	fmtlog("Could not find item '%s'", name)
 end
 
 function getItemCategory(item)
@@ -35,7 +35,7 @@ function getItemCategory(item)
 end
 
 function getFluidByName(name)
-	if game then return game.fluid_prototypes[name] end
+	if prototypes then return prototypes.fluid[name] end
 	return data.raw.fluid[name]
 end
 
@@ -67,17 +67,6 @@ function tryLoadItemWithFallback(name, amt, fallback, fallbackamt)
 		val = tryLoadItem(fallback, amt)
 	end
 	return val
-end
-
---This is an expensive function to call!
-function getEntityCategory(item)
-	if type(item) == "string" then item = data.raw.item[item] end
-	if not item then error(serpent.block("No such item found!")) end
-	local place = item.place_result
-	if place then
-		local proto = getPrototypeByName(place)
-		return proto and proto.type or nil
-	end
 end
 
 local function isEntryInCategory(item, cat, nest)
@@ -136,25 +125,4 @@ end
 
 function isItemInCategory(item, cat)
 	return isEntryInCategory(item, cat, 0)
-end
-
-function createBasicCraftingItem(name, icon, ingredients, time, stacksize)
-  local item = {
-    type = "item",
-    name = name,
-    icon = icon,
-    icon_size = 32,
-    subgroup = "intermediate-product",
-    order = "o[" .. name .. "]",
-    stack_size = stacksize and stacksize or 100
-  }
-  local recipe =   {
-    type = "recipe",
-    name = name,
-    enabled = false,
-    ingredients = ingredients,
-    energy_required = time,
-    result = name
-  }
-  return item, recipe
 end

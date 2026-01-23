@@ -1,3 +1,5 @@
+--[[
+
 require "arrays"
 
 local function createCache()
@@ -78,3 +80,5 @@ function getAllOreDrops()
 	end
 	return cache.oreDrops
 end
+
+--]]

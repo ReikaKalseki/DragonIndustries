@@ -38,7 +38,7 @@ function getColorsForTile(tile)
 	if not COLORS_LOOKUP[tile.name] then
 		calculateColor(tile)
 	end
-	return util.table.deepcopy(COLORS_LOOKUP[tile.name])
+	return table.deepcopy(COLORS_LOOKUP[tile.name])
 end
 
 local function addColor(color, render, tiles1, tiles2)

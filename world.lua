@@ -1,3 +1,5 @@
+--[[
+
 function isWaterEdge(surface, x, y)
 	if surface.get_tile{x-1, y}.valid and surface.get_tile{x-1, y}.prototype.layer == "water-tile" then
 		return true
@@ -12,6 +14,7 @@ function isWaterEdge(surface, x, y)
 		return true
 	end
 end
+--]]
 
 function isInChunk(x, y, chunk)
 	local minx = math.min(chunk.left_top.x, chunk.right_bottom.x)

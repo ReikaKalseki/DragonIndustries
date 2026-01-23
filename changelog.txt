@@ -1,4 +1,20 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.101.152
+Date: Nov 15 2022
+  Bugfixes:
+    - Fixed issue with conversion recipes from null not being properly detected
+  New Features:
+    - Added code to avoid duplicates when injecting new items into existing recipes
+    - Added many library functions
+  Misc Changes:
+    - Major code cleanup
+    - Productivity now applies to the DI intermediate fluid recipes
+---------------------------------------------------------------------------------------------------
+Version: 1.101.151
+Date: Nov 4 2022
+  New Features:
+    - Added sanity checking to recipe functions
+---------------------------------------------------------------------------------------------------
 Version: 1.101.148
 Date: Oct 31 2022
   Bugfixes:
