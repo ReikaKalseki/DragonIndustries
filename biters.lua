@@ -1,3 +1,7 @@
+
+---@param curve [data.UnitSpawnDefinition]
+---@param evo number
+---@return {[string]: number},number
 function getPossibleBiters(curve, evo)
 	local ret = {}
 	local totalWeight = 0
@@ -7,16 +11,16 @@ function getPossibleBiters(curve, evo)
 		for idx = 1,#vals do
 			local point = vals[idx]
 			local ref = point.evolution_factor
-			local chance = point.weight
+			local chance = point.spawn_weight
 			if evo >= ref then
 				local interp = 0
 				if idx == #vals then
 					interp = chance
 				else
-					interp = chance+(vals[idx+1].weight-chance)*(vals[idx+1].evolution_factor-ref)
+					interp = chance+(vals[idx+1].spawn_weight-chance)*(vals[idx+1].evolution_factor-ref)
 				end
 				if interp > 0 then
-					table.insert(ret, {biter, interp+totalWeight})
+					ret[biter] = interp+totalWeight
 					totalWeight = totalWeight+interp
 				end
 				break
@@ -26,20 +30,26 @@ function getPossibleBiters(curve, evo)
 	return ret, totalWeight
 end
 
+---@param biters {[string]: number},number
+---@param total number
+---@return string|nil
 function selectWeightedBiter(biters, total)
 	local f = math.random()*total
-	local ret = "nil"
+	local ret = nil
 	local smallest = 99999999
-	for i = 1,#biters do
-		if f <= biters[i][2] and smallest > biters[i][2] then
-			smallest = biters[i][2]
-			ret = biters[i][1]
+	for biter,weight in pairs(biters) do
+		if f <= weight and smallest > weight then
+			smallest = weight
+			ret = biter
 		end
 	end
 	--game.print("Selected " .. ret .. " with " .. f .. " / " .. total)
 	return ret
 end
 
+---@param curve [data.UnitSpawnDefinition]
+---@param evo number
+---@return string|nil
 function getSpawnedBiter(curve, evo)
 	--game.print("Real Evo " .. evo)
 	if math.random() < 0.5 then

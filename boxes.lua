@@ -1,3 +1,7 @@
+---@param area BoundingBox
+---@param dx number
+---@param dy number
+---@return BoundingBox
 function moveBox(area, dx, dy)
 	--printTable(area)
 	area.left_top.x = area.left_top.x+dx
@@ -7,6 +11,10 @@ function moveBox(area, dx, dy)
 	return area
 end
 
+---@param area BoundingBox
+---@param padX number
+---@param padY number
+---@return BoundingBox
 function padBox(area, padX, padY)
 	area.left_top.x = area.left_top.x-padX
 	area.left_top.y = area.left_top.y-padY
@@ -15,16 +23,27 @@ function padBox(area, padX, padY)
 	return area
 end
 
+---@param entity LuaEntity
+---@param dx number
+---@param dy number
+---@return BoundingBox
 function getMovedBox(entity, dx, dy)
 	local base = entity.prototype.collision_box
 	return moveBox(base, dx, dy)
 end
 
+---@param entity LuaEntity
+---@param padX number
+---@param padY number
+---@return BoundingBox
 function getPaddedBox(entity, padX, padY)
 	local base = entity.prototype.collision_box
 	return moveBox(padBox(base, padX, padY), entity.position.x, entity.position.y)
 end
 
+---@param box1 BoundingBox
+---@param box2 BoundingBox
+---@return boolean
 function intersects(box1, box2)
 	if box1.right_bottom.x < box2.left_top.x then return false end -- box1 is left of box2
     if box1.left_top.x > box2.right_bottom.x then return false end -- box1 is right of box2
@@ -33,6 +52,9 @@ function intersects(box1, box2)
     return true -- boxes overlap
 end
 
+---@param entity LuaEntity
+---@param r number
+---@return BoundingBox
 function getRadiusAABB(entity, r)
 	return {{entity.position.x-r, entity.position.y-r}, {entity.position.x+r, entity.position.y+r}}
 end

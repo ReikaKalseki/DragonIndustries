@@ -49,8 +49,8 @@ function recipeProduces(recipe, item)
 end
 
 ---@param recipe string|data.RecipePrototype
----@param item data.IngredientPrototype
----@param addIfPresent boolean
+---@param item data.ProductPrototype
+---@param addIfPresent? boolean
 function addRecipeProduct(recipe, item, addIfPresent)
 	recipe = lookupRecipe(recipe)
 	addIngredientToList(recipe.results, item, addIfPresent)
@@ -62,15 +62,17 @@ function addRecipeProduct(recipe, item, addIfPresent)
 	end
 end
 
+---@param from string|data.RecipePrototype
+---@param to string|data.RecipePrototype
 function turnRecipeIntoConversion(from, to)
-	local tgt = data.raw.recipe[to]
+	local tgt = lookupRecipe(to)
 	if not tgt then return end
 	local rec = createConversionRecipe(from, to, false)
 	tgt.ingredients = rec.ingredients
 end
 
----@param list table
----@param item data.IngredientPrototype
+---@param list [data.IngredientPrototype|data.ProductPrototype]
+---@param item data.IngredientPrototype|data.ProductPrototype
 ---@param addIfPresent? boolean
 ---@return boolean
 function addIngredientToList(list, item, addIfPresent)
@@ -94,7 +96,7 @@ function addIngredientToList(list, item, addIfPresent)
 	return added
 end
 
----@param list table
+---@param list [data.IngredientPrototype|data.ProductPrototype]
 ---@param type string
 ---@param item string
 ---@param amount int32
@@ -121,7 +123,7 @@ function buildIngredient(item, amount, catalyst)
 	return {type = type, name = put, amount = amount, catalyst = catalyst and true or false}
 end
 
----@param list table
+---@param list [data.IngredientPrototype|data.ProductPrototype]
 ---@param item string|data.ItemPrototype
 ---@param repl string|data.ItemPrototype
 ---@param ratio number
@@ -130,6 +132,7 @@ end
 function changeIngredientInList(list, item, repl, ratio, skipError)
 	if type(item) == "table" then item = item.name end
 	if type(repl) == "table" then repl = repl.name end
+	repl = repl --[[@as string]]
 	local put = buildIngredient(repl, 1)
 	for i = 1,#list do
 		local ing = list[i]
@@ -142,13 +145,13 @@ function changeIngredientInList(list, item, repl, ratio, skipError)
 	end
 	if skipError then
 		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
-		return 0
 	else
 		fmterror("No such item '%s' in recipe!", item)
 	end
+	return 0
 end
 
----@param list table
+---@param list [data.IngredientPrototype|data.ProductPrototype]
 ---@param item string|data.ItemPrototype
 ---@param delta int32
 ---@param skipError? boolean
@@ -170,10 +173,10 @@ function changeCountInList(list, item, delta, skipError)
 	end
 	if skipError then
 		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
-		return 0
 	else
 		fmterror("No such item '%s' in recipe!", item)
 	end
+	return 0
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -228,6 +231,7 @@ end
 function addItemToRecipe(recipe, item, amount, addIfPresent, catalyst)
 	recipe = lookupRecipe(recipe)
 	if type(item) == "table" then item = item.name end
+	item = item --[[@as string]]
 	local add = buildIngredient(item, amount, catalyst)
 	fmtlog("Adding '%s' x%s to recipe '%s'", item, amount, recipe.name)
 	if recipe.ingredients then
@@ -282,21 +286,22 @@ function lockRecipe(recipe, from)
 	recipe.enabled = false
 end
 
----@param list table
----@param ingredient data.IngredientPrototype
+---@param list {[string]: int32}
+---@param ingredient data.IngredientPrototype|data.ProductPrototype
 local function addToCostTable(list, ingredient)
 	list[ingredient.name] = ingredient.amount+(list[ingredient.name] and list[ingredient.name] or 0)
 end
 
----@param list table
----@param recursionSet? table
----@return table
+---@param list [data.IngredientPrototype|data.ProductPrototype]
+---@param recursionSet? {[string]: data.RecipePrototype|string}
+---@return {[string]: int32}
 local function buildRecipeCostTable(list, recursionSet)
 	local ret = {}
 	for i,ing in ipairs(list) do
 		local recipeRecurse = recursionSet and recursionSet[ing.name] or nil
 		if recipeRecurse then
 			if recipeRecurse == "*" then recipeRecurse = data.raw.recipe[ing.name] end
+			if type(recipeRecurse) == "string" then recipeRecurse = data.raw.recipe[recipeRecurse] end
 			for i2,ing2 in ipairs(buildRecipeCostTable(recipeRecurse.ingredients, recursionSet)) do
 				addToCostTable(ret, ing2)
 			end
@@ -309,9 +314,9 @@ end
 
 ---@param from string|data.RecipePrototype
 ---@param to string|data.RecipePrototype
----@param recursionSet? table
+---@param recursionSet? {[string]: data.RecipePrototype|string}
 ---@param scaleInput? boolean
----@return table, table, int32
+---@return {[string]: int32}, {[string]: int32}, int32
  --returns {to-from, from-to}, ie the cost to go from 1 to 2, followed by anything costed by 1 but not 2; to-from = to_cost-from_cost+from_output (including the "new" output of from!)
 local function buildDifferences(from, to, recursionSet, scaleInput)
 	local rec1 = lookupRecipe(from)
@@ -395,7 +400,7 @@ function createUncraftingRecipe(recipe, ref)
 end
 
 ---@param recipe string|data.RecipePrototype
----@return table
+---@return data.LocalisedString
 function getRecipeLocale(recipe)
 	return recipe.localised_name and recipe.localised_name or {"?", {"recipe-name." .. recipe.name}, {"item-name." .. recipe.results[1].name}, {"entity-name." .. recipe.results[1].name}}
 end
@@ -404,7 +409,7 @@ end
 ---@param to string|data.RecipePrototype
 ---@param register? boolean
 ---@param tech? string|data.TechnologyPrototype
----@param recursionSet? table
+---@param recursionSet? {[string]: data.RecipePrototype|string}
 function createConversionRecipe(from, to, register, tech, recursionSet)
 	if tech and type(tech) == "table" then tech = tech.name end
 
@@ -424,7 +429,7 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	
 	local cost, extra, n = buildDifferences(rec1, rec2, recursionSet, true)
 
-	if cost == nil or getTableSize(cost) == 0 then fmterror("Could not compute cost of conversion recipe %s - delta from '%s' to '%s' yielded nothing (%s - %s*%s)", name, rec1.name, rec2.name, rec2.ingredients, n, rec1.ingredients) end
+	if getTableSize(cost) == 0 then fmterror("Could not compute cost of conversion recipe %s - delta from '%s' to '%s' yielded nothing (%s - %s*%s)", name, rec1.name, rec2.name, rec2.ingredients, n, rec1.ingredients) end
 	
 	local ret = table.deepcopy(rec2)
 	ret.name = name
@@ -443,6 +448,8 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	local mainFrom = getItemByName(fromItem)
 	if not mainFrom then fmterror("Could not determine main input of conversion recipe %s - no item exists by its output name '%s'", name, fromItem) end
 	if not mainProduct then fmterror("Could not determine main product of conversion recipe %s - no item exists by its output name '%s'", name, result) end
+	mainFrom = mainFrom --[[@as data.ItemPrototype]]
+	mainProduct = mainProduct --[[@as data.ItemPrototype]]
 	local itemType = mainProduct.type
 
 	if extra then
@@ -453,23 +460,15 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 
 	ret.main_product = result
 	
-	ret.subgroup = data.raw[itemType][result].subgroup
+	ret.subgroup = data.raw[itemType][result].subgroup --[[@as string]]
 	
 	--ret.localised_name = {"conversion-recipe.name", {"?", {"recipe-name." .. rec1.name}, {"item-name." .. fromItem}, {"entity-name." .. fromItem}}, {"?", {"recipe-name." .. rec2.name}, {"item-name." .. result}, {"entity-name." .. result}}}
 	
 	ret.localised_name = {"conversion-recipe.name", getRecipeLocale(rec1), getRecipeLocale(rec2)}
 	ret.energy_required = math.max(1, rec2.energy_required-rec1.energy_required*n)
 
-	ret.icons = {}
-	appendIcons(ret.icons, mainFrom)
-	appendIcons(ret.icons, mainProduct)
-	rescaleIcon(ret.icons[1], 0.75)
-	ret.icons[1].shift={-10, -10}
-	rescaleIcon(ret.icons[2], 0.75)
-	ret.icons[2].shift={8, 8}
-	ret.icons[1].floating = true
-	ret.icons[2].floating = true
-	table.insert(ret.icons, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32})
+	ret.icons = createABIcon(mainFrom, mainProduct)
+	table.insert(ret.icons, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32, shift = {-2, -2}})
 	
 	ret.allow_decomposition = false
 	ret.allow_as_intermediate = false
@@ -490,7 +489,7 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	return ret
 end
 
----@param from string|data.RecipePrototype
+---@param recipe string|data.RecipePrototype
 ---@param with string|data.RecipePrototype
 ---@param main string|data.ItemPrototype
 ---@param skipError? boolean

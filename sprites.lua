@@ -1,12 +1,13 @@
+---@param entry data.Animation|data.AnimationVariations|data.Sprite
 function clearTexture(entry)
 	if entry.sheet then clearTexture(entry.sheet) return end
 	entry.filename = "__core__/graphics/empty.png"
 	entry.width = 1
 	entry.height = 1
 	entry.shift = nil
-	entry.hr_version = nil
 end
 
+---@return data.Animation
 function createCircuitSprite()
 	local ret = {
         filename = "__DragonIndustries__/graphics/signal-connection.png",
@@ -20,6 +21,7 @@ function createCircuitSprite()
 	return ret
 end
 
+---@return data.Animation
 function createCircuitActivitySprite()
 	local ret = {
         filename = "__core__/graphics/empty.png",
@@ -31,90 +33,97 @@ function createCircuitActivitySprite()
 	return ret
 end
 
+---@param filename string
+---@param suffix string
+---@return string
 local function suffixFilename(filename, suffix)
 	local parts = splitString(filename, ".")
 	local newname = parts[1] .. suffix
 	return newname .. "." .. parts[2]
 end
 
+---@param from string
+---@param to string
+---@param filename string
+---@return string
 local function genReparentedFilename(from, to, filename)
 	local val = literalReplace(filename, "__" .. from .. "__", "__" .. to .. "__")
 	return val
 end
 
+---@param modname string
+---@param itemname string
+---@param oldname string
+---@param filename string
+---@return string
 local function genNewFilename(modname, itemname, oldname, filename)
 	if string.find(filename, "__base__/graphics/terrain/masks", 1, true) then return filename end
 	local val = literalReplace(filename, "__base__", "__" .. modname .. "__")
 	return literalReplace(val, oldname, itemname)
 end
 
-local function replaceSpritesInTable(tab, new, hr)
-	if not tab.filename then return end
-	tab.filename = new
-	if tab.hr_version then
-		tab.hr_version.filename = hr
-	end
-end
-
+---@param from string
+---@param to string
+---@param entry data.Sprite|data.Animation|data.SimpleEntityPrototype
 local function reparentSpritesDynamic(from, to, entry)
 	if entry.filename then
 		entry.filename = genReparentedFilename(from, to, entry.filename)
-	elseif entry.picture then
-		entry.picture = genReparentedFilename(from, to, entry.picture)
-	end
-	if entry.hr_version then
-		if entry.hr_version.filename then
-			entry.hr_version.filename = genReparentedFilename(from, to, entry.hr_version.filename)
-		elseif entry.picture then
-			entry.hr_version.picture = genReparentedFilename(from, to, entry.hr_version.picture)
-		end
+	elseif entry.picture and entry.picture.filename then
+		entry.picture = 
+		{
+			filename = genReparentedFilename(from, to, entry.picture.filename)
+		}
 	end
 end
 
+---@param modname string
+---@param itemname string
+---@param oldname string
+---@param entry data.Sprite|data.Animation|data.SimpleEntityPrototype
 local function replaceSpritesInTableDynamic(modname, itemname, oldname, entry)
 	if entry.filename then
 		entry.filename = genNewFilename(modname, itemname, oldname, entry.filename)
-	elseif entry.picture then
-		entry.picture = genNewFilename(modname, itemname, oldname, entry.picture)
-	end
-	if entry.hr_version then
-		if entry.hr_version.filename then
-			entry.hr_version.filename = genNewFilename(modname, itemname, oldname, entry.hr_version.filename)
-		elseif entry.picture then
-			entry.hr_version.picture = genNewFilename(modname, itemname, oldname, entry.hr_version.picture)
-		end
+	elseif entry.picture and entry.picture.filename then
+		entry.picture = {filename = genNewFilename(modname, itemname, oldname, entry.picture.filename)}
 	end
 end
 
+---@param entry data.Sprite|data.Animation
+---@param suffix string
 local function suffixSpritesInTableDynamic(entry, suffix)
 	if not entry.filename then return end
 	entry.filename = suffixFilename(entry.filename, suffix)
-	if entry.hr_version then
-		entry.hr_version.filename = suffixFilename(entry.hr_version.filename, suffix)
-	end
 end
 
-function replaceSprites(obj, new, hr)
+---@param tab data.SpriteSource
+---@param new string
+local function replaceSpritesInTable(tab, new)
+	if tab and tab.filename then tab.filename = new end
+end
+
+---@param obj table
+---@param new string
+function replaceSprites(obj, new)
 	if obj.picture then
-		replaceSpritesInTable(obj.picture, new, hr)
+		replaceSpritesInTable(obj.picture, new)
 	end
 	if obj.pictures then
 		for _,pic in pairs(obj.pictures) do
-			replaceSpritesInTable(pic, new, hr)
+			replaceSpritesInTable(pic, new)
 		end
 	end
 	if obj.sprites then
 		for _,pic in pairs(obj.sprites) do
-			replaceSpritesInTable(pic, new, hr)
+			replaceSpritesInTable(pic, new)
 		end
 	end
 	if obj.animation then
 		if obj.animation.layers then
 			for _,lyr in pairs(obj.animation.layers) do
-				replaceSpritesInTable(lyr, new, hr)
+				replaceSpritesInTable(lyr, new)
 			end
 		else
-			replaceSpritesInTable(obj.animation, new, hr)
+			replaceSpritesInTable(obj.animation, new)
 		end
 	end
 end
@@ -268,7 +277,7 @@ function swapSprites(obj1, obj2)
 end
 
 
----@param icon table
+---@param icon data.IconData
 ---@param scale number
 ---@param expectedSize? int32
 function rescaleIcon(icon, scale, expectedSize)
@@ -281,10 +290,12 @@ function rescaleIcon(icon, scale, expectedSize)
 end
 
 
----@param ret table
----@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype
+---@param ret [data.IconData]
+---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
 function appendIcons(ret, object)
-		if object.icon then
+		if type(object) == "IconData" then
+			table.insert(ret, object)
+		elseif object.icon then
 			table.insert(ret, {icon = object.icon, icon_size = object.icon_size and object.icon_size or 64})
 		elseif object.icons then
 			for _,i in pairs(object.icons) do
@@ -295,10 +306,26 @@ function appendIcons(ret, object)
 		end
 	end
 
----@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype
----@param backgrounds? table
----@param overlays? table
+---@param obj1 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
+---@param obj2 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
 ---@return table
+	function createABIcon(obj1, obj2)
+	local ret = {}
+	appendIcons(ret, obj1)
+	appendIcons(ret, obj2)
+	rescaleIcon(ret[1], 0.75)
+	ret[1].shift={-8, -8}
+	rescaleIcon(ret[2], 0.75)
+	ret[2].shift={4, 4}
+	ret[1].floating = true
+	ret[2].floating = true
+	return ret
+	end
+
+---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
+---@param backgrounds? [data.IconData]
+---@param overlays? [data.IconData]
+---@return [data.IconData]
 function makeIconArray(object, backgrounds, overlays)
 		local ret = {}
 		if backgrounds then
@@ -317,8 +344,8 @@ function makeIconArray(object, backgrounds, overlays)
 		return ret
 end
 
----@param items table
----@return table
+---@param items [data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData]
+---@return [data.IconData]
 function makeIconArrayForItems(items)
 		local ret = {}
 		

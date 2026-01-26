@@ -11,14 +11,16 @@ function addMineableDropToEntity(proto, drop)
 	table.insert(proto.minable.results, drop)
 end
 
+---@return data.ItemPrototype|LuaItemPrototype|nil
 function getItemByName(name)
 	if prototypes then return prototypes.item[name] end
 	for k,v in pairs(defines.prototypes.item) do
 		if data.raw[k][name] then
-			return data.raw[k][name]
+			return data.raw[k][name] --[[@as data.ItemPrototype]]
 		end
 	end
 	fmtlog("Could not find item '%s'", name)
+	return nil
 end
 
 function getItemCategory(item)

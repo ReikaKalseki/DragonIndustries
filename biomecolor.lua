@@ -7,9 +7,12 @@ local COLORS_PRIMARY = {}
 local COLORS_SECONDARY = {}
 RENDER_COLORS = {}
 
+---@param tile LuaTile|data.TilePrototype|string
 local function calculateColor(tile)
+	if type(tile) == "table" then tile = tile.name end
+	tile = tile --[[@as string]]
 	local colors = {}
-	for part in string.gmatch(tile.name, "[^%-]+") do		
+	for part in string.gmatch(tile, "[^%-]+") do		
 		local li = COLORS_PRIMARY[part]
 		if li and #li > 0 then
 			for _,color in pairs(li) do
@@ -26,11 +29,13 @@ local function calculateColor(tile)
 			end	
 		end
 	end
-	COLORS_LOOKUP[tile.name] = colors
+	COLORS_LOOKUP[tile] = colors
 end
 
+---@param tile LuaTile
+---@return {[string]: data.Color},boolean
 function getColorsForTile(tile)
-	if not tile.valid then return ALL_COLORS end
+	if not tile.valid then return ALL_COLORS,false end
 	if string.find(tile.name, "water") then
 		return ALL_COLORS,true --need some way to prevent rainbow water
 	end
@@ -38,9 +43,13 @@ function getColorsForTile(tile)
 	if not COLORS_LOOKUP[tile.name] then
 		calculateColor(tile)
 	end
-	return table.deepcopy(COLORS_LOOKUP[tile.name])
+	return table.deepcopy(COLORS_LOOKUP[tile.name]),false
 end
 
+---@param color string
+---@param render int32
+---@param tiles1 [string]
+---@param tiles2? [string]
 local function addColor(color, render, tiles1, tiles2)
 	for _,tile in pairs(tiles1) do
 		if COLORS_PRIMARY[tile] == nil then COLORS_PRIMARY[tile] = {} end
@@ -58,9 +67,11 @@ local function addColor(color, render, tiles1, tiles2)
 	RENDER_COLORS[color] = render
 end
 
+---@param tile LuaTile
+---@return nil|data.Color,boolean
 function getRandomColorForTile(tile, rand)
 	local colors,water = getColorsForTile(tile)
-	if colors == nil or #colors == 0 then return nil end
+	if colors == nil or #colors == 0 then return nil,false end
 	local sel = colors[rand(1, #colors)]
 	if water then
 		
