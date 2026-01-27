@@ -18,11 +18,15 @@ local inventoryTypes = {
 	["beacon"] = defines.inventory.beacon_modules,
 }
 
+---@param entity LuaEntity
+---@param quality LuaQualityPrototype|string
 function respawnWithQuality(entity, quality)
 	entity.surface.create_entity{name=entity.name, position=entity.position, force=entity.force, quality=quality, direction = entity.direction}
 	entity.destroy()
 end
 
+---@param proto data.PrototypeBase
+---@return int32
 function getObjectTier(proto)
 	--return splitAfter(proto.name, "%-")
 	local val = 1
@@ -33,7 +37,8 @@ function getObjectTier(proto)
 	return val
 end
 
-function convertGhostToRealEntity(player, ghost)
+---@param ghost LuaEntity
+function convertGhostToRealEntity(ghost)
 	local modules = ghost.item_requests
 	local _,repl = ghost.revive()
 	
@@ -41,12 +46,11 @@ function convertGhostToRealEntity(player, ghost)
 		for module, amt in pairs(modules) do
 			repl.insert({name=module, count = amt})
 		end
-		
-		--script.raise_event(defines.events.on_pre_build, {position=repl.position, player_index=player.index, shift_build=false, built_by_moving=false, direction=repl.direction, revive=true})
-		--script.raise_event(defines.events.on_built_entity, {created_entity=repl, player_index=player.index, tick=game.tick, name="on_built_entity", revive=true})
 	end
 end
 
+---@param entity LuaEntity
+---@param player LuaPlayer
 function upgradeEntity(entity, player, repl)
 	local pos = entity.position
 	local force = entity.force
@@ -62,17 +66,30 @@ function upgradeEntity(entity, player, repl)
 	end
 end
 
-function convertGhostsNear(player, box) --box may be null, and so it searches the whole surface
-	local ghosts = player.surface.find_entities_filtered{type = {"entity-ghost", "tile-ghost"}, area = box}
+---@param player LuaPlayer
+---@param range number
+function convertGhostsNear(player, range)
+	convertGhostsIn(player.surface, getRadiusAABB(player.character, range))
+end
+
+---@param surface LuaSurface
+---@param box BoundingBox
+function convertGhostsIn(surface, box) --box may be null, and so it searches the whole surface
+	local ghosts = surface.find_entities_filtered{type = {"entity-ghost", "tile-ghost"}, area = box}
 	for _,entity in pairs(ghosts) do
 		if entity.type == "entity-ghost" then
-			convertGhostToRealEntity(player, entity)
+			convertGhostToRealEntity(entity)
 		elseif entity.type == "tile-ghost" then
 			entity.revive()
 		end
 	end
 end
 
+---@param category string
+---@param name string
+---@param type_ string|[string]
+---@param reduce? number
+---@param percent? number
 function addResistance(category, name, type_, reduce, percent)
 	if type(type_) == "table" then
 		for _,tt in pairs(type_) do
@@ -83,14 +100,14 @@ function addResistance(category, name, type_, reduce, percent)
 	if not reduce then reduce = 0 end
 	if not percent then percent = 0 end
 	if data.raw["damage-type"][type_] == nil then
-		log("Adding resistance to '" .. category .. "/" .. name .. "' with damage type '" .. type_ .. "', which does not exist!")
+		fmtlog("Adding resistance to '%s/%s' with damage type '%s', which does not exist!", category, name, type_)
 	end
 	local obj = data.raw[category][name]
 	if obj.resistances == nil then
 		obj.resistances = {}
 	end
 	local resistance = createResistance(type_, reduce, percent)
-	for k,v in pairs(obj.resistances) do
+	for _,v in ipairs(obj.resistances) do
 		if v.type == type_ then --if resistance to that type already present, overwrite-with-max rather than have two for same type
 			v.decrease = math.max(v.decrease and v.decrease or 0, reduce)
 			v.percent = math.max(v.percent and v.percent or 0, percent)
@@ -100,6 +117,10 @@ function addResistance(category, name, type_, reduce, percent)
 	table.insert(data.raw[category][name].resistances, resistance)
 end
 
+---@param type_ string
+---@param reduce number
+---@param percent_ number
+---@return data.Resistance
 function createResistance(type_, reduce, percent_)
 return
 {
@@ -109,6 +130,8 @@ return
 }
 end
 
+---@param entity LuaEntity
+---@return LuaInventory|nil
 function getPrimaryInventory(entity)
 	local type = inventoryTypes[entity.type]
 	if type then

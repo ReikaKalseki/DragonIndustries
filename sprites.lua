@@ -21,8 +21,8 @@ function createCircuitSprite()
 	return ret
 end
 
----@return data.Animation
-function createCircuitActivitySprite()
+---@return data.Sprite
+function createEmptySprite()
 	local ret = {
         filename = "__core__/graphics/empty.png",
         width = 1,
@@ -32,7 +32,7 @@ function createCircuitActivitySprite()
     }
 	return ret
 end
-
+--[[
 ---@param filename string
 ---@param suffix string
 ---@return string
@@ -64,7 +64,7 @@ end
 
 ---@param from string
 ---@param to string
----@param entry data.Sprite|data.Animation|data.SimpleEntityPrototype
+---@param entry data.Sprite|data.Animation|data.SimpleEntityPrototype|data.Sprite4Way
 local function reparentSpritesDynamic(from, to, entry)
 	if entry.filename then
 		entry.filename = genReparentedFilename(from, to, entry.filename)
@@ -79,7 +79,7 @@ end
 ---@param modname string
 ---@param itemname string
 ---@param oldname string
----@param entry data.Sprite|data.Animation|data.SimpleEntityPrototype
+---@param entry data.Sprite|data.Animation|data.SimpleEntityPrototype|data.Sprite4Way
 local function replaceSpritesInTableDynamic(modname, itemname, oldname, entry)
 	if entry.filename then
 		entry.filename = genNewFilename(modname, itemname, oldname, entry.filename)
@@ -88,7 +88,7 @@ local function replaceSpritesInTableDynamic(modname, itemname, oldname, entry)
 	end
 end
 
----@param entry data.Sprite|data.Animation
+---@param entry data.Sprite|data.Animation|data.Sprite4Way
 ---@param suffix string
 local function suffixSpritesInTableDynamic(entry, suffix)
 	if not entry.filename then return end
@@ -128,6 +128,10 @@ function replaceSprites(obj, new)
 	end
 end
 
+---@param from string
+---@param to string
+---@param obj {[any]: data.Animation}
+---@param key any
 local function handleAnimationTable(from, to, obj, key)
 	local anim = obj[key]
 	--log(from .. " > " .. to .. " in " .. obj.name .. "[" .. key .. "]" .. (anim and "yes" or "no"))
@@ -141,6 +145,9 @@ local function handleAnimationTable(from, to, obj, key)
 	end
 end
 
+---@param from string
+---@param to string
+---@param obj data.Sprite|data.Animation|data.SimpleEntityPrototype|data.CombinatorPrototype|data.TilePrototype
 function reparentSprites(from, to, obj)
 	log("Reparenting sprites in " .. obj.name)
 	if obj.icon then
@@ -182,6 +189,9 @@ function reparentSprites(from, to, obj)
 	end
 end
 
+---@param modname string
+---@param oldname string
+---@param obj data.Sprite|data.Animation|data.SimpleEntityPrototype|data.CombinatorPrototype|data.TilePrototype
 function replaceSpritesDynamic(modname, oldname, obj)
 	if type(obj) ~= "table" then error("Tried to resprite a primitive object!") end
 	if not obj.name then error("Cannot resprite a nameless object: " .. serpent.block(obj)) end
@@ -191,7 +201,7 @@ function replaceSpritesDynamic(modname, oldname, obj)
 	end
 	if obj.icons then
 		for _,ico in pairs(obj.icons) do
-			ico.filename = genNewFilename(modname, obj.name, oldname, ico.filename)
+			ico.icon = genNewFilename(modname, obj.name, oldname, ico.icon)
 		end
 	end
 	if obj.picture then
@@ -223,13 +233,15 @@ function replaceSpritesDynamic(modname, oldname, obj)
 	end
 end
 
+---@param obj data.Sprite|data.Animation|data.SimpleEntityPrototype|data.CombinatorPrototype|data.TilePrototype
+---@param suffix string
 function suffixSpritesDynamic(obj, suffix)
 	if obj.icon then
 		obj.icon = suffixFilename(obj.icon, suffix)
 	end
 	if obj.icons then
 		for _,ico in pairs(obj.icons) do
-			ico.filename = suffixFilename(ico.filename, suffix)
+			ico.icon = suffixFilename(ico.icon, suffix)
 		end
 	end
 	if obj.picture then
@@ -275,7 +287,7 @@ function swapSprites(obj1, obj2)
 	swapObjSpriteField(obj1, obj2, "off_animation")
 	swapObjSpriteField(obj1, obj2, "variants")
 end
-
+--]]
 
 ---@param icon data.IconData
 ---@param scale number

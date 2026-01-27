@@ -1,3 +1,6 @@
+---@param argb int32
+---@param divideBy? number
+---@return data.Color
 function convertColor(argb, divideBy)
 	if not argb then error("Null color") end
 	local blue = bit32.band(argb, 255)
@@ -11,6 +14,11 @@ function convertColor(argb, divideBy)
 	return {r = red, g = green, b = blue}
 end
 
+---@param clr data.Color
+---@param dr number
+---@param dg number
+---@param db number
+---@return data.Color
 function permuteColor(clr, dr, dg, db)
 	clr = table.deepcopy(clr)
 	clr.r = math.max(0, math.min(255, clr.r+dr))
@@ -19,6 +27,11 @@ function permuteColor(clr, dr, dg, db)
 	return clr
 end
 
+---@param clr data.Color
+---@param dr number
+---@param dg number
+---@param db number
+---@return data.Color
 function permuteColorScale(clr, dr, dg, db)
 	clr = table.deepcopy(clr)
 	clr.r = math.max(0, math.min(255, clr.r*dr))

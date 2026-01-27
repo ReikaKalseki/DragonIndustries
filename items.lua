@@ -1,9 +1,21 @@
 require "registration"
 
+if not DIItemTypeCache then DIItemTypeCache = {} end
+
+---@param item string|data.ItemPrototype
+---@param name string
+function mapItemType(item, name)
+	if type(item) == "table" then item = item.type end
+	--fmtlog("Mapping item '%s' to type '%s'", item, name)
+	DIItemTypeCache[item] = name
+end
+
 --"drop" follows standard https://wiki.factorio.com/Types/ProductPrototype / https://wiki.factorio.com/Types/ItemProductPrototype
+---@param proto data.EntityPrototype
+---@param drop data.ProductPrototype
 function addMineableDropToEntity(proto, drop)
 	if not proto.minable then proto.minable = {mining_time = 1, results = {}} end
-	if not proto.minable.results then
+	if proto.minable.result and not proto.minable.results then
 		proto.minable.results = {}
 		table.insert(proto.minable.results, {type = "item", name = proto.minable.result, amount = proto.minable.count})
 		proto.minable.result = nil
@@ -11,120 +23,74 @@ function addMineableDropToEntity(proto, drop)
 	table.insert(proto.minable.results, drop)
 end
 
+---@param name string
 ---@return data.ItemPrototype|LuaItemPrototype|nil
 function getItemByName(name)
 	if prototypes then return prototypes.item[name] end
-	for k,v in pairs(defines.prototypes.item) do
-		if data.raw[k][name] then
-			return data.raw[k][name] --[[@as data.ItemPrototype]]
-		end
+	local type = getItemOrFluidType(name)
+	if not type then
+		return nil
 	end
-	fmtlog("Could not find item '%s'", name)
-	return nil
+	local item = data.raw[type][name] --[[@as data.ItemPrototype]]
+	if not item then
+		fmtlog("Could not find item '%s'", name)
+		return nil
+	end
+	return item
 end
 
-function getItemCategory(item)
-	if type(item) == "string" then
-		item = getItemByName(item)
-	end
-	if not item then error("No such item!") end
-	if game then
-		return item.group
-	else
-		local sub = item.subgroup
-		return data.raw["item-subgroup"].group
-	end
-end
-
+---@param name string
+---@return data.FluidPrototype|LuaFluidPrototype|nil
 function getFluidByName(name)
 	if prototypes then return prototypes.fluid[name] end
 	return data.raw.fluid[name]
 end
 
-function getItemType(name)
-	if getFluidByName(name) then
-		return "fluid"
-	elseif getItemByName(name) then
-		return "item"
-	else
-		error("Item " .. name .. " does not exist in any form!")
+---@param name string
+---@return data.ItemPrototype|LuaItemPrototype|data.FluidPrototype|LuaFluidPrototype|nil,boolean
+function getItemOrFluidByName(name)
+	local ret = getItemByName(name) ---@type data.ItemPrototype|LuaItemPrototype|data.FluidPrototype|LuaFluidPrototype|nil
+	local fluid = false
+	if not ret then
+		ret = getFluidByName(name)
+		fluid = ret ~= nil
 	end
+	return ret,fluid
 end
 
-function tryLoadItem(name, amt)
-	if getItemByName(name) then
-		return {type = "item", name = name, amount = amt}
-	elseif getFluidByName(name) then
-		return {type = "fluid", name = name, amount = amt}
+---@param name string
+---@return string|nil
+function getItemOrFluidType(name) --returns either the item type ("item", "ammo", "tool", etc, or "fluid")
+	if DIItemTypeCache["iron-plate"] == nil then fmterror("Tried to access item lookup before table was populated!") end
+	local type = DIItemTypeCache[name]
+	if type then
+		return type
+	elseif data.raw.fluid[name] then
+		return "fluid"
 	else
+		fmtlog("No category was mapped for item or fluid name '%s'", name)
 		return nil
 	end
 end
 
-function tryLoadItemWithFallback(name, amt, fallback, fallbackamt)
-	local val = tryLoadItem(name, amt)
-	if val == nil and fallback ~= nil then
-		amt = fallbackamt and fallbackamt or amt
-		log("Item " .. name .. " not found; switching to fallback " .. fallback .. " x" .. amt)
-		val = tryLoadItem(fallback, amt)
+---@param item string|data.ItemPrototype|LuaItemPrototype
+---@return data.ItemSubGroup|LuaGroup
+function getItemCategory(item)
+	if type(item) == "string" then
+		item = getItemByName(item) --[[@as data.ItemPrototype|LuaItemPrototype]]
 	end
-	return val
-end
-
-local function isEntryInCategory(item, cat, nest)
-	--log("Seeking for " .. serpent.block(item) .. " @ " .. nest)
-	if type(item) == "table" then
-		if nest == 0 and not item.name then  --is a list of items
-			--log("Parsing list tabled value " .. serpent.block(item))
-			for k,e in pairs(item) do
-				if isEntryInCategory(e, cat, 1) then
-					return true
-				end
-			end
-		elseif item.name then --actually a table value, likely {type, name, amount}
-			--log("Parsing named tabled value " .. serpent.block(item))
-			if item.type == "item" then
-				local var = data.raw.item[item.name]
-				--log("plain item lookup is: " .. (var and var.name or "null"))
-				if var == nil then
-					var = data.raw.tool[item.name]
-					--log("tool item lookup is: " .. (var and var.name or "null"))
-				end
-				if var == nil then
-					var = data.raw["repair-tool"][item.name]
-					--log("repairtool item lookup is: " .. (var and var.name or "null"))
-				end
-				if var == nil then
-					var = data.raw.ammo[item.name]
-					--log("ammo item lookup is: " .. (var and var.name or "null"))
-				end
-				if var == nil then
-					var = data.raw.capsule[item.name]
-					--log("capsule item lookup is: " .. (var and var.name or "null"))
-				end
-				if var == nil then error("Recipe produces nonexistent item '" .. item.name .. "'!") end
-				if isEntryInCategory(item.name, cat, nest+1) then
-					return true
-				end
-			else
-				
-			end
-		else
-			--log("ERROR Parsing tabled value " .. serpent.block(item))
-		end
-		return false
-	elseif type(item) == "string" then
-		local ref = getItemByName(item)
-		if not ref then error("Recipe produces nonexistent item '" .. item .. "'!") end
-		if not ref.place_result then return false end
-		for name,proto in pairs(data.raw[cat]) do
-			if ref.place_result == name then
-				return true
-			end
-		end
+	if not item then fmterror("No such item!") end
+	if prototypes then
+		return item.group
+	else
+		local sub = item.subgroup
+		return data.raw["item-subgroup"][sub]
 	end
 end
 
+---@param item string|data.ItemPrototype|LuaItemPrototype
+---@param cat string
+---@return boolean
 function isItemInCategory(item, cat)
-	return isEntryInCategory(item, cat, 0)
+	return getItemCategory(item).name == cat
 end

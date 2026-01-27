@@ -5,12 +5,13 @@ require "mathhelper"
 require "tech"
 
 ---@param recipe string|data.RecipePrototype
+---@param skipError? boolean
 ---@return data.RecipePrototype
-function lookupRecipe(recipe)
+function lookupRecipe(recipe, skipError)
 	local ret = nil
 	if type(recipe) == "string" then
 		ret = data.raw.recipe[recipe]
-		if not ret then fmterror("No such recipe found: '%s'", recipe) end
+		if ret == nil and not skipError then fmterror("No such recipe found: '%s'", recipe) end
 	else
 		ret = recipe
 	end
@@ -109,18 +110,62 @@ end
 ---@param item string
 ---@param amount int32
 ---@param catalyst? boolean
+---@param fluid? boolean
 ---@return data.ItemIngredientPrototype
-function buildIngredient(item, amount, catalyst)
-	local type = data.raw.fluid[item] and "fluid" or "item"
+function buildIngredient(item, amount, catalyst, fluid)
 	local put = item
+	if fluid == nil then fluid = getItemOrFluidType(item) == "fluid" end
+	--[[
+	local type = "item"
 	if item:find("^fluid::") ~= nil then
 		type = "fluid"
 		put = string.sub(item, 8)
 	elseif item:find("^item::") ~= nil then
 		type = "item"
 		put = string.sub(item, 7)
+	else
+		type = data.raw.fluid[item] and "fluid" or "item"
 	end
-	return {type = type, name = put, amount = amount, catalyst = catalyst and true or false}
+	--]]
+	return {type = fluid and "fluid" or "item", name = put, amount = amount, catalyst = catalyst and true or false}
+end
+
+---@param name string
+---@param amt int32
+---@param fallback? string
+---@param fallbackamt? int32
+---@param catalyst? boolean
+---@return data.ItemIngredientPrototype
+function buildIngredientWithFallback(name, amt, fallback, fallbackamt, catalyst)
+	local seek, fluid = getItemOrFluidByName(name)
+	local use = name ---@type string
+	if seek then
+
+	elseif fallback then
+		use = fallback
+		amt = fallbackamt and fallbackamt or amt
+		local type = getItemOrFluidType(fallback)
+		fluid = type == "fluid"
+		fmtlog("Item '%s' not found; switching to fallback '%s' [%s] x%s", name, fallback, type, amt)
+	end
+	--use = (fluid and "fluid::" or "item::") .. use
+	return buildIngredient(use, amt, catalyst, fluid)
+end
+
+---@param items {[string]: int32}
+---@param catalyst? boolean
+---@return data.ItemIngredientPrototype
+function buildIngredientWithFallbacks(items, catalyst)
+	for item,amt in pairs(items) do
+		local seek, fluid = getItemOrFluidByName(item)
+		if seek then
+			--local name = (fluid and "fluid::" or "item::") .. item
+			--return buildIngredient(name, amt, catalyst)
+			return buildIngredient(item, amt, catalyst, fluid)
+		end
+	end
+	fmterror("No items were found for the fallback set %s", items)
+	return {} --just to make the linter not complain about return
 end
 
 ---@param list [data.IngredientPrototype|data.ProductPrototype]
@@ -268,10 +313,7 @@ function moveRecipe(recipe, from, to)
 		end
 	end
 	tech.effects = effects
-	for _,eff in pairs(tech2.effects) do
-		if eff.type == "unlock-recipe" and eff.recipe == recipe then return end
-	end
-	table.insert(tech2.effects, {type = "unlock-recipe", recipe = recipe})
+	addTechUnlock(tech2, recipe)
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -279,11 +321,8 @@ end
 function lockRecipe(recipe, from)
 	recipe = lookupRecipe(recipe)
 	if not recipe then return end
-	local tech = lookupTech(from)
-	if not tech.effects then tech.effects = {} end
-	table.insert(tech.effects, {type = "unlock-recipe", recipe = recipe.name})
-	log("Putting recipe '" .. recipe.name .. "' behind tech '" .. tech.name .. "'")
 	recipe.enabled = false
+	addTechUnlock(from, recipe)
 end
 
 ---@param list {[string]: int32}
@@ -480,7 +519,7 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 		data:extend({ret})
 		
 		if tech then
-			table.insert(data.raw.technology[tech].effects, {type = "unlock-recipe", recipe = name})
+			addTechUnlock(tech, name)
 		end
 	end
 	

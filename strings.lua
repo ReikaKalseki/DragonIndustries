@@ -1,3 +1,6 @@
+---@param str string
+---@param seek string
+---@return int,int
 function lastIndexOf(str, seek)
 	local flip = string.reverse(str)
 	local s,e = string.find(str, seek, 1, true)
@@ -6,18 +9,14 @@ function lastIndexOf(str, seek)
 		s = string.len(str)-s
 		e = string.len(str)-e
 		return s,e
+	else
+		return -1,-1
 	end
 end
 
-function splitAfter(str, mark)
-	local s,e = lastIndexOf(str, mark)
-	if s and e then
-		local part = string.sub(str, e+1)
-		--log(part)
-		return tonumber(part)
-	end
-end
-
+---@param str string
+---@param seek string
+---@return [string]
 function splitString(str, seek)
 	local ret = {}
 	for s in str:gmatch("([^" .. seek .. "]+)") do
@@ -26,6 +25,10 @@ function splitString(str, seek)
 	return ret
 end
 
+---@param str string
+---@param seek string
+---@param repl string
+---@return string
 function literalReplace(str, seek, repl)
 	if seek == repl then return str end
 	local idx,idx2 = str:find(seek, 1, true)
@@ -37,11 +40,16 @@ function literalReplace(str, seek, repl)
 	return ret
 end
 
+---@param str string
+---@param seek string
+---@return boolean
 function stringStartsWith(str, seek)
 	return string.sub(str, 1, string.len(seek)) == seek
 end
 
+---@param str string
+---@param seek string
+---@return boolean
 function stringEndsWith(str, seek)
 	return string.sub(str, -#seek) == seek
-
 end

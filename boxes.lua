@@ -58,3 +58,13 @@ end
 function getRadiusAABB(entity, r)
 	return {{entity.position.x-r, entity.position.y-r}, {entity.position.x+r, entity.position.y+r}}
 end
+
+---@param box BoundingBox
+---@return number
+function getBoundingBoxAverageEdgeLength(box)
+	local pos1 = box.left_top
+	local pos2 = box.right_bottom
+	local dx = pos2.x-pos1.x
+	local dy = pos2.y-pos1.y
+	return (dx+dy)/2
+end

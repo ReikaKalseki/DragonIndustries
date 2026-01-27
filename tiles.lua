@@ -1,9 +1,16 @@
 require "arrays"
 
+---@param tile LuaTile
+---@return boolean
 function isWaterTile(tile)
 	return tile.valid and hasCollisionMask(tile, "water-tile")
 end
 
+---@param surface LuaSurface
+---@param x int
+---@param y int
+---@param name string|[string]
+---@return boolean
 function isTileType(surface, x, y, name)
 	if not surface then return false end
 	if not surface.valid then return false end

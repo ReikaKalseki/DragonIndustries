@@ -75,3 +75,53 @@ function apply_heat_pipe_glow_stack(layers)
 	end
 	return ret
 end
+
+---@return {[string]: {[string]: [number]}}
+local function createCircuitConnections()
+	local ret = {
+        shadow = {
+          red = {0.375, 0.5625},
+          green = {-0.125, 0.5625}
+        },
+        wire = {
+          red = {0.375, 0.15625},
+          green = {-0.125, 0.15625}
+        }
+    }
+	return ret
+end
+
+---@param name string
+---@return data.ConstantCombinatorPrototype
+function createFixedSignalAnchor(name)
+	local obj = createDerivative(data.raw["constant-combinator"]["constant-combinator"], {
+		name = name,
+		destructible = false,
+		minable = "nil",
+		order = "z",
+		max_health = 100,
+		collision_mask = {layers = {}},
+		flags = {"placeable-neutral", "player-creation", "not-on-map", "placeable-off-grid", "not-blueprintable", "not-deconstructable"},
+		selection_priority = 254,
+		sprites = {
+			north = createCircuitSprite(),
+			west = createCircuitSprite(),
+			east = createCircuitSprite(),
+			south = createCircuitSprite(),
+		},
+		activity_led_sprites = {
+			north = createEmptySprite(),
+			west = createEmptySprite(),
+			east = createEmptySprite(),
+			south = createEmptySprite(),
+		},	
+		circuit_wire_connection_points = {
+			createCircuitConnections(),
+			createCircuitConnections(),
+			createCircuitConnections(),
+			createCircuitConnections(),
+		}
+	})
+	
+	return obj
+end

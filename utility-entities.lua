@@ -1,3 +1,8 @@
+require "di-utils"
+
+---@param name string
+---@param params LightProperties
+---@return data.LampPrototype
 function createBasicLight(name, params)
 	return createDerivative(data.raw.lamp["small-lamp"],
 	{

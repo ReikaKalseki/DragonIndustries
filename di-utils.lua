@@ -1,3 +1,8 @@
+---@class (exact) LightProperties
+---@field brightness number
+---@field size number
+---@field color Color
+
 ---@param old table
 ---@param new table
 ---@return table
@@ -25,6 +30,8 @@ end
 function stringify(object)
     if object == nil then
         return "nil"
+    elseif type(object) == "string" then
+        return object
     elseif type(object) == "table" then
         return serpent.block(object)
     else
@@ -44,8 +51,9 @@ end
 ---@param msg string
 function fmterror(msg, ...)
     local params = {}
-    for i,v in ipairs({...}) do
-       table.insert(params, stringify(v))
+    local args = table.pack(...)
+    for i=1,args.n do
+        table.insert(params, stringify(args[i]))
     end
     error(string.format(msg, table.unpack(params)) .. " at\n" .. debug.traceback())
 end

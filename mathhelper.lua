@@ -1,23 +1,34 @@
+---@class (exact) Vector
+---@field dx number
+---@field dy number
+
+---@param position MapPosition
+---@param shift int8
+---@return MapPosition
 function roundToGridBitShift(position, shift)
 	position.x = bit32.lshift(bit32.rshift(position.x, shift), shift)
 	position.y = bit32.lshift(bit32.rshift(position.y, shift), shift)
 	return position
 end
 
-function getBoundingBoxAverageEdgeLength(box)
-	local pos1 = box.left_top
-	local pos2 = box.right_bottom
-	local dx = pos2.x-pos1.x
-	local dy = pos2.y-pos1.y
-	return (dx+dy)/2
-end
-
-function getDistance(e1, e2)
-	local dx = e1.position.x-e2.position.x
-	local dy = e1.position.y-e2.position.y
+---@param p1 MapPosition
+---@param p2 MapPosition
+---@return number
+function getDistance(p1, p2)
+	local dx = p1.x-p2.x
+	local dy = p1.y-p2.y
 	return math.sqrt(dx*dx+dy*dy)
 end
 
+---@param e1 LuaEntity
+---@param e2 LuaEntity
+---@return number
+function getEntityDistance(e1, e2)
+	return getDistance(e1.position, e2.position)
+end
+
+---@param dir defines.direction
+---@return Vector
 function directionToVector(dir)
 	if dir == defines.direction.north then
 		return {dx=0, dy=-1}
@@ -30,29 +41,46 @@ function directionToVector(dir)
 	end
 end
 
+---@param i number
+---@param n number
+---@return number
 function roundToNearest(i, n)
 	local m = n/2
 	return i+m-(i+m)%n
 end
 
+---@param num number
+---@param places int8
+---@return number
 function roundToPlaces(num, places)
   local mult = 10^(places or 0)
   return math.floor(num * mult + 0.5) / mult
 end
 
+---@param dir defines.direction
+---@return defines.direction
 function getOppositeDirection(dir) --direction is a number from 0 to 15
 	return (dir+8)%16
 end
 
+---@param dir defines.direction
+---@return defines.direction
 function getPerpendicularDirection(dir) --direction is a number from 0 to 15
 	return (dir+4)%16
 end
 
+---@param num number
+---@param figures int8
+---@return number
 function sigFig(num, figures)
     local x = figures - math.ceil(math.log(math.abs(num), 10))
     return (math.floor(num*10^x+0.5)/10^x)
 end
 
+---@param x number
+---@param xmax number
+---@param ymax number
+---@return number
 function getCosInterpolate(x, xmax, ymax)
 	if x >= xmax then
 		return ymax
@@ -61,6 +89,10 @@ function getCosInterpolate(x, xmax, ymax)
 	return func*ymax
 end
 
+---@generic T
+---@param values {[T]: number}
+---@param randFunc function
+---@return T
 function getCustomWeightedRandom(values, randFunc)
 	local sum = 0
 	for idx,num in pairs(values) do
@@ -78,7 +110,8 @@ function getCustomWeightedRandom(values, randFunc)
 end
 
 ---@generic T
----@param vals table(T)
+---@param vals [T]
+---@param randFunc function
 ---@return T
 function getWeightedRandom(vals, randFunc)
 	local sum = 0
@@ -100,6 +133,9 @@ function getWeightedRandom(vals, randFunc)
 	return nil
 end
 
+---@param a number
+---@param b number
+---@return number
 function cantorCombine(a, b)
 	--a = (a+1024)%16384
 	--b = b%16384

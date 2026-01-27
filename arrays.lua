@@ -23,7 +23,7 @@ function getArrayOf(vals, num)
 	return ret
 end
 
----@param object LuaEntity
+---@param object LuaEntity|LuaTile
 ---@param mask string
 ---@return boolean
 function hasCollisionMask(object, mask)
@@ -53,10 +53,10 @@ function areTablesEqual(t1, t2)
 	return true
 end
 
-
----@param list table
+---@generic E : any
+---@param list E[]
 ---@param randFunc function
----@return any
+---@return E
 function getRandomTableEntry(list, randFunc)
 	local size = getTableSize(list)
 	local idx = randFunc and randFunc(0, size-1) or math.random(0, size-1)
@@ -82,14 +82,16 @@ function removeEntryFromListIf(list, func)
 	end
 end
 
----@param list table
----@param val any
+---@generic E : any
+---@param list E[]
+---@param val E
 function removeEntryFromList(list, val)
 	removeEntryFromListIf(list, function(param) return param == val end)
 end
 
----@param list table
----@param val any
+---@generic E : any
+---@param list E[]
+---@param val E
 ---@return boolean
 function listHasValue(list, val)
 	local tableCheck = type(val) == "table"
@@ -104,6 +106,17 @@ function listHasValue(list, val)
 	return false
 end
 
+---@generic E : any
+---@param list E[]
+---@return {[E]: boolean}
+function convertToSet(list)
+	local ret = {}
+	for _,e in pairs(list) do
+		ret[e] = true
+	end
+	return ret
+end
+
 ---@param list table
 ---@return table
 function removeNilValues(list)
@@ -114,8 +127,9 @@ function removeNilValues(list)
 	return ret
 end
 
----@param list table
----@return any
+---@generic E : any
+---@param list E[]
+---@return E
 function getHighestTableKey(list)
 	local lim = -9999999
 	local ret = nil

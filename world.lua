@@ -1,21 +1,18 @@
---[[
+require "tiles"
 
+---@param surface LuaSurface
+---@param x number
+---@param y number
+---@return boolean
+---@deprecated
 function isWaterEdge(surface, x, y)
-	if surface.get_tile{x-1, y}.valid and surface.get_tile{x-1, y}.prototype.layer == "water-tile" then
-		return true
-	end
-	if surface.get_tile{x+1, y}.valid and surface.get_tile{x+1, y}.prototype.layer == "water-tile" then
-		return true
-	end
-	if surface.get_tile{x, y-1}.valid and surface.get_tile{x, y-1}.prototype.layer == "water-tile" then
-		return true
-	end
-	if surface.get_tile{x, y+1}.valid and surface.get_tile{x, y+1}.prototype.layer == "water-tile" then
-		return true
-	end
+	return isWaterTile(surface.get_tile(x-1, y)) or isWaterTile(surface.get_tile(x+1, y)) or isWaterTile(surface.get_tile(x, y-1)) or isWaterTile(surface.get_tile(x, y+1))
 end
---]]
 
+---@param x number
+---@param y number
+---@param chunk BoundingBox
+---@return boolean
 function isInChunk(x, y, chunk)
 	local minx = math.min(chunk.left_top.x, chunk.right_bottom.x)
 	local miny = math.min(chunk.left_top.y, chunk.right_bottom.y)
