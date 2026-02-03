@@ -4,17 +4,7 @@ require "arrays"
 require "tech"
 require "items"
 
-for k,v in pairs(defines.prototypes.item) do
-	if data.raw[k] == nil then
-		fmtlog("Tried to iterate nonexistent item-type key %s", k) --this is nil for item-with-inventory in vanilla?!
-	elseif type(data.raw[k]) ~= "table" then
-		fmterror("Tried to iterate invalid item-type key %s: [%s] %s", k, tostring(type(data.raw[k])), data.raw[k])
-	else
-		for name,proto in pairs(data.raw[k]) do
-			mapItemType(name, k)
-		end
-	end
-end--[[
+--[[
 for name,fluid in pairs(data.raw.fluid) do
 	mapItemType(name, "fluid")
 end--]]

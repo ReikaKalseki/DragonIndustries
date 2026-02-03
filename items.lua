@@ -1,13 +1,28 @@
 require "registration"
 
-if not DIItemTypeCache then DIItemTypeCache = {} end
-
 ---@param item string|data.ItemPrototype
 ---@param name string
-function mapItemType(item, name)
+local function mapItemType(item, name)
 	if type(item) == "table" then item = item.type end
 	--fmtlog("Mapping item '%s' to type '%s'", item, name)
 	DIItemTypeCache[item] = name
+end
+
+if not DIItemTypeCache or DIItemTypeCache["iron-plate"] == nil then
+	DIItemTypeCache = {}
+
+	if prototypes then return end
+	for k,v in pairs(defines.prototypes.item) do
+		if data.raw[k] == nil then
+			fmtlog("Tried to iterate nonexistent item-type key %s", k) --this is nil for item-with-inventory in vanilla?!
+		elseif type(data.raw[k]) ~= "table" then
+			fmterror("Tried to iterate invalid item-type key %s: [%s] %s", k, tostring(type(data.raw[k])), data.raw[k])
+		else
+			for name,proto in pairs(data.raw[k]) do
+				mapItemType(name, k)
+			end
+		end
+	end
 end
 
 --"drop" follows standard https://wiki.factorio.com/Types/ProductPrototype / https://wiki.factorio.com/Types/ItemProductPrototype
@@ -24,7 +39,7 @@ function addMineableDropToEntity(proto, drop)
 end
 
 ---@param name string
----@return data.ItemPrototype|LuaItemPrototype|nil
+---@return data.ItemPrototype|data.FluidPrototype|LuaItemPrototype|LuaFluidPrototype|nil
 function getItemByName(name)
 	if prototypes then return prototypes.item[name] end
 	local type = getItemOrFluidType(name)
@@ -50,7 +65,7 @@ end
 ---@return data.ItemPrototype|LuaItemPrototype|data.FluidPrototype|LuaFluidPrototype|nil,boolean
 function getItemOrFluidByName(name)
 	local ret = getItemByName(name) ---@type data.ItemPrototype|LuaItemPrototype|data.FluidPrototype|LuaFluidPrototype|nil
-	local fluid = false
+	local fluid = ret and ret.type == "fluid" or false
 	if not ret then
 		ret = getFluidByName(name)
 		fluid = ret ~= nil
@@ -59,13 +74,15 @@ function getItemOrFluidByName(name)
 end
 
 ---@param name string
----@return string|nil
+---@return string?
 function getItemOrFluidType(name) --returns either the item type ("item", "ammo", "tool", etc, or "fluid")
+	if data and data.raw.item[name] then return "item" end
+	if prototypes and prototypes.item[name] then return "item" end
 	if DIItemTypeCache["iron-plate"] == nil then fmterror("Tried to access item lookup before table was populated!") end
 	local type = DIItemTypeCache[name]
 	if type then
 		return type
-	elseif data.raw.fluid[name] then
+	elseif (prototypes and prototypes.fluid or data.raw.fluid)[name] then
 		return "fluid"
 	else
 		fmtlog("No category was mapped for item or fluid name '%s'", name)

@@ -131,7 +131,7 @@ return
 end
 
 ---@param entity LuaEntity
----@return LuaInventory|nil
+---@return LuaInventory?
 function getPrimaryInventory(entity)
 	local type = inventoryTypes[entity.type]
 	if type then

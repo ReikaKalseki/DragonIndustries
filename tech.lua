@@ -90,7 +90,7 @@ function removeTechUnlock(tech, recipe)
 end
 
 ---@param pack string|data.ToolPrototype
----@return string|nil
+---@return string?
 function getPrereqTechForPack(pack)
 	if type(pack) == "table" then pack = pack.name end
 	local tech = data.raw.technology[pack]
@@ -155,14 +155,14 @@ end
 
 ---@param tech string|data.TechnologyPrototype
 ---@param pack string
-function addSciencePackToTech(tech, pack)
+---@param prereq? string|data.TechnologyPrototype
+function addSciencePackToTech(tech, pack, prereq)
 	tech = lookupTech(tech, true)
+	if prereq and type(prereq) == "table" then prereq = prereq.name end
 	if not tech then return end
 	if techUsesPack(tech, pack) then return end
-	local prereq = getPrereqTechForPack(pack)
-	if prereq then
-		addPrereqToTech(tech, prereq)
-	end
+	if not prereq then prereq = getPrereqTechForPack(pack) end
+	if prereq then addPrereqToTech(tech, prereq) end
 	table.insert(tech.unit.ingredients, {pack, 1})
 	fmtlog("Added science pack %s to tech %s", pack, tech.name)
 end

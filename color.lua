@@ -1,5 +1,5 @@
----@param argb int32
----@param divideBy? number
+---@param argb int
+---@param divideBy? boolean
 ---@return data.Color
 function convertColor(argb, divideBy)
 	if not argb then error("Null color") end

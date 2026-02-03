@@ -20,6 +20,7 @@ end
 
 ---@param recipe string|data.RecipePrototype
 ---@param item string|data.ItemPrototype
+---@return int
 function getRecipeCost(recipe, item)
 	recipe = lookupRecipe(recipe)
 	if type(item) == "table" then item = item.name end
@@ -28,6 +29,7 @@ function getRecipeCost(recipe, item)
 				return ing.amount
 			end
 		end
+		return 0
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -81,7 +83,7 @@ function addIngredientToList(list, item, addIfPresent)
 	local needsAdd = true
 	fmtlog("Inserting recipe item %s/%s x %s", item.type, item.name, item.amount)
 	for _,ing in pairs(list) do
-		if ing.name == name then
+		if ing.name == item then
 			if addIfPresent then
 				ing.amount = ing.amount+item.amount
 				added = true
@@ -109,10 +111,9 @@ end
 
 ---@param item string
 ---@param amount int32
----@param catalyst? boolean
 ---@param fluid? boolean
 ---@return data.ItemIngredientPrototype
-function buildIngredient(item, amount, catalyst, fluid)
+function buildIngredient(item, amount,  fluid)
 	local put = item
 	if fluid == nil then fluid = getItemOrFluidType(item) == "fluid" end
 	--[[
@@ -127,16 +128,15 @@ function buildIngredient(item, amount, catalyst, fluid)
 		type = data.raw.fluid[item] and "fluid" or "item"
 	end
 	--]]
-	return {type = fluid and "fluid" or "item", name = put, amount = amount, catalyst = catalyst and true or false}
+	return {type = fluid and "fluid" or "item", name = put, amount = amount}
 end
 
 ---@param name string
 ---@param amt int32
 ---@param fallback? string
 ---@param fallbackamt? int32
----@param catalyst? boolean
 ---@return data.ItemIngredientPrototype
-function buildIngredientWithFallback(name, amt, fallback, fallbackamt, catalyst)
+function buildIngredientWithFallback(name, amt, fallback, fallbackamt)
 	local seek, fluid = getItemOrFluidByName(name)
 	local use = name ---@type string
 	if seek then
@@ -149,23 +149,23 @@ function buildIngredientWithFallback(name, amt, fallback, fallbackamt, catalyst)
 		fmtlog("Item '%s' not found; switching to fallback '%s' [%s] x%s", name, fallback, type, amt)
 	end
 	--use = (fluid and "fluid::" or "item::") .. use
-	return buildIngredient(use, amt, catalyst, fluid)
+	return buildIngredient(use, amt, fluid)
 end
 
 ---@param items {[string]: int32}
----@param catalyst? boolean
----@return data.ItemIngredientPrototype
-function buildIngredientWithFallbacks(items, catalyst)
+---@param skipError? boolean
+---@return data.ItemIngredientPrototype?
+function buildIngredientWithFallbacks(items, skipError)
 	for item,amt in pairs(items) do
 		local seek, fluid = getItemOrFluidByName(item)
 		if seek then
-			--local name = (fluid and "fluid::" or "item::") .. item
-			--return buildIngredient(name, amt, catalyst)
-			return buildIngredient(item, amt, catalyst, fluid)
+			return buildIngredient(item, amt, fluid)
 		end
 	end
-	fmterror("No items were found for the fallback set %s", items)
-	return {} --just to make the linter not complain about return
+	if not skipError then
+		fmterror("No items were found for the fallback set %s", items)
+	end
+	return nil
 end
 
 ---@param list [data.IngredientPrototype|data.ProductPrototype]
@@ -240,6 +240,21 @@ end
 
 ---@param recipe string|data.RecipePrototype
 ---@param item string|data.ItemPrototype
+---@param repl string|data.ItemPrototype
+---@param ratio? number
+---@param skipError? boolean
+---@return int32
+function replaceItemInRecipeIfExists(recipe, item, repl, ratio, skipError)
+	if type(item) == "table" then item = item.name end
+	if type(repl) == "table" then repl = repl.name end
+	item = item --[[@as string]]
+	repl = repl --[[@as string]]
+	if getItemOrFluidType(repl) == nil then return 0 end
+	return replaceItemInRecipe(recipe, item, repl, ratio, skipError)
+end
+
+---@param recipe string|data.RecipePrototype
+---@param item string|data.ItemPrototype
 ---@param delta int32
 ---@param skipError? boolean
 ---@return int32
@@ -272,16 +287,28 @@ end
 ---@param item string|data.ItemPrototype
 ---@param amount int32
 ---@param addIfPresent? boolean
----@param catalyst? boolean
-function addItemToRecipe(recipe, item, amount, addIfPresent, catalyst)
+function addItemToRecipe(recipe, item, amount, addIfPresent)
 	recipe = lookupRecipe(recipe)
 	if type(item) == "table" then item = item.name end
 	item = item --[[@as string]]
-	local add = buildIngredient(item, amount, catalyst)
+	local add = buildIngredient(item, amount)
 	fmtlog("Adding '%s' x%s to recipe '%s'", item, amount, recipe.name)
 	if recipe.ingredients then
 		addIngredientToList(recipe.ingredients, add, addIfPresent)
 	end
+end
+
+---@param recipe string|data.RecipePrototype
+---@param item string|data.ItemPrototype
+---@param amount int32
+---@param addIfPresent? boolean
+---@return boolean
+function addItemToRecipeIfExists(recipe, item, amount, addIfPresent)
+	if type(item) == "table" then item = item.name end
+	item = item --[[@as string]]
+	if getItemOrFluidType(item) == nil then return false end
+	addItemToRecipe(recipe, item, amount, addIfPresent)
+	return true
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -323,6 +350,16 @@ function lockRecipe(recipe, from)
 	if not recipe then return end
 	recipe.enabled = false
 	addTechUnlock(from, recipe)
+end
+
+---@param cost {[string]: int32}
+---@return [data.IngredientPrototype]
+function convertCostTableToIngredients(cost)
+	local ret = {}
+	for item,amt in pairs(cost) do
+		table.insert(ret, buildIngredient(item, amt))
+	end
+	return ret
 end
 
 ---@param list {[string]: int32}
@@ -472,10 +509,7 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	
 	local ret = table.deepcopy(rec2)
 	ret.name = name
-	ret.ingredients = {}
-	for item,amt in pairs(cost) do
-		table.insert(ret.ingredients, buildIngredient(item, amt))
-	end
+	ret.ingredients = convertCostTableToIngredients(cost)
 	
 	if data.raw.item["basic-circuit-board"] then
 		replaceItemInRecipe(ret, "electronic-circuit", "basic-circuit-board", 1, true)

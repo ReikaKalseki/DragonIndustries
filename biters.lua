@@ -32,7 +32,7 @@ end
 
 ---@param biters {[string]: number},number
 ---@param total number
----@return string|nil
+---@return string?
 function selectWeightedBiter(biters, total)
 	local f = math.random()*total
 	local ret = nil
@@ -49,7 +49,7 @@ end
 
 ---@param curve [data.UnitSpawnDefinition]
 ---@param evo number
----@return string|nil
+---@return string?
 function getSpawnedBiter(curve, evo)
 	--game.print("Real Evo " .. evo)
 	if math.random() < 0.5 then

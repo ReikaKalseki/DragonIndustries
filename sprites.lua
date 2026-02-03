@@ -303,7 +303,7 @@ end
 
 
 ---@param ret [data.IconData]
----@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
+---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
 function appendIcons(ret, object)
 		if type(object) == "IconData" then
 			table.insert(ret, object)
@@ -318,8 +318,8 @@ function appendIcons(ret, object)
 		end
 	end
 
----@param obj1 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
----@param obj2 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
+---@param obj1 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
+---@param obj2 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
 ---@return table
 	function createABIcon(obj1, obj2)
 	local ret = {}
@@ -334,7 +334,7 @@ function appendIcons(ret, object)
 	return ret
 	end
 
----@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData
+---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
 ---@param backgrounds? [data.IconData]
 ---@param overlays? [data.IconData]
 ---@return [data.IconData]
@@ -356,7 +356,7 @@ function makeIconArray(object, backgrounds, overlays)
 		return ret
 end
 
----@param items [data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.IconData]
+---@param items [data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData]
 ---@return [data.IconData]
 function makeIconArrayForItems(items)
 		local ret = {}
