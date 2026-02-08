@@ -32,7 +32,7 @@ function stringify(object)
         return "nil"
     elseif type(object) == "string" then
         return object
-    elseif type(object) == "table" then
+    elseif type(object) == "table" or type(object) == "function" then
         return serpent.block(object)
     else
         return tostring(object)

@@ -8,9 +8,10 @@ function getLinearArray(num)
 	return ret
 end
 
----@param vals table
+---@generic E : any
+---@param vals [E]
 ---@param num int
----@return table
+---@return [E]
 function getArrayOf(vals, num)
 	local ret = {}
 	while #ret < num do
@@ -23,11 +24,54 @@ function getArrayOf(vals, num)
 	return ret
 end
 
----@param object LuaEntity|LuaTile
+---@generic E : any
+---@param val E
+---@param num int
+---@return [E]
+function getArrayOfCopies(val, num)
+	local ret = {}
+		for i = 1,num do
+			table.insert(ret, val)
+		end
+	return ret
+end
+
+---@generic E : any
+---@param num int
+---@param calc fun(): E
+---@return [E]
+function getArrayOfGenerated(num, calc)
+	local ret = {}
+		for i = 1,num do
+			table.insert(ret, calc())
+		end
+	return ret
+end
+
+---@generic E : any
+---@param arr [E]
+---@param check fun(E): boolean
+---@param limit? int
+---@return [E]
+function getAllMatching(arr, check, limit)
+	local ret = {}
+	local count = 0
+		for k,v in pairs(arr) do
+			if check(v) then
+				table.insert(ret, v)
+				count = count+1
+				if limit and limit > 0 and count >= limit then break end
+			end
+		end
+	return ret
+end
+
+---@param object LuaEntity|LuaTile|data.EntityPrototype|data.TilePrototype
 ---@param mask string
 ---@return boolean
 function hasCollisionMask(object, mask)
-	return object.prototype and object.prototype.collision_mask and object.prototype.collision_mask.layers[mask]
+	local proto = object.prototype and object.prototype or object
+	return proto and proto.collision_mask and proto.collision_mask.layers[mask] ~= nil
 end
 
 ---@param val table
@@ -55,7 +99,7 @@ end
 
 ---@generic E : any
 ---@param list E[]
----@param randFunc function
+---@param randFunc fun(int, int): int
 ---@return E
 function getRandomTableEntry(list, randFunc)
 	local size = getTableSize(list)

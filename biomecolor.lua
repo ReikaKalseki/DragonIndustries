@@ -1,16 +1,24 @@
 --require "arrays"
 require "util"
 
+ ---@type [string]
 ALL_COLORS = {}
+
+ ---@type {string: [string]}
 local COLORS_LOOKUP = {}
+
+ ---@type {string: [string]}
 local COLORS_PRIMARY = {}
+
+ ---@type {string: [string]}
 local COLORS_SECONDARY = {}
+
+ ---@type {string: int32}
 RENDER_COLORS = {}
 
 ---@param tile LuaTile|data.TilePrototype|string
 local function calculateColor(tile)
-	if type(tile) == "table" then tile = tile.name end
-	tile = tile --[[@as string]]
+	if type(tile) == "table" or type(tile) == "userdata" then tile = tile.name end
 	local colors = {}
 	for part in string.gmatch(tile, "[^%-]+") do		
 		local li = COLORS_PRIMARY[part]
@@ -33,7 +41,7 @@ local function calculateColor(tile)
 end
 
 ---@param tile LuaTile
----@return {[string]: data.Color},boolean
+---@return [string],boolean
 function getColorsForTile(tile)
 	if not tile.valid then return ALL_COLORS,false end
 	if string.find(tile.name, "water") then
@@ -68,7 +76,8 @@ local function addColor(color, render, tiles1, tiles2)
 end
 
 ---@param tile LuaTile
----@return nil|data.Color,boolean
+---@param rand LuaRandomGenerator|fun(int, int): int
+---@return string?,boolean
 function getRandomColorForTile(tile, rand)
 	local colors,water = getColorsForTile(tile)
 	if colors == nil or #colors == 0 then return nil,false end

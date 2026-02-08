@@ -320,19 +320,40 @@ function appendIcons(ret, object)
 
 ---@param obj1 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
 ---@param obj2 data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
+---@param float? boolean
 ---@return table
-	function createABIcon(obj1, obj2)
+function createABIcon(obj1, obj2, float)
 	local ret = {}
+	
 	appendIcons(ret, obj1)
-	appendIcons(ret, obj2)
-	rescaleIcon(ret[1], 0.75)
-	ret[1].shift={-8, -8}
-	rescaleIcon(ret[2], 0.75)
-	ret[2].shift={4, 4}
-	ret[1].floating = true
-	ret[2].floating = true
-	return ret
+	
+	for idx,ico in ipairs(ret) do
+		rescaleIcon(ico, 0.75)
+		if float then
+			ico.shift={ico.icon_size and -ico.icon_size/8 or -8, ico.icon_size and -ico.icon_size/8 or -8}
+			ico.floating = true
+		end
+		ico.draw_background = true
 	end
+	local start = #ret
+
+	appendIcons(ret, obj2)
+
+	for idx,ico in ipairs(ret) do
+		if idx > start then
+			rescaleIcon(ico, 0.75)
+			if float then
+				ico.shift={ico.icon_size and ico.icon_size/16 or 4, ico.icon_size and ico.icon_size/16 or 4}
+				ico.floating = true
+			else
+				ico.shift={ico.icon_size and ico.icon_size/8 or 8, ico.icon_size and ico.icon_size/8 or 8}
+			end
+			ico.draw_background = true
+		end
+	end
+	
+	return ret
+end
 
 ---@param object data.RecipePrototype|data.ItemPrototype|data.FluidPrototype|data.PlanetPrototype|data.IconData
 ---@param backgrounds? [data.IconData]

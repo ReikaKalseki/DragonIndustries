@@ -1,6 +1,6 @@
 require "arrays"
 
----@param tile LuaTile
+---@param tile LuaTile|data.TilePrototype
 ---@return boolean
 function isWaterTile(tile)
 	return tile.valid and hasCollisionMask(tile, "water-tile")

@@ -25,6 +25,13 @@ if not DIItemTypeCache or DIItemTypeCache["iron-plate"] == nil then
 	end
 end
 
+---@param item string|data.ItemPrototype
+---@return data.LocalisedString
+function getItemLocale(item)
+	if type(item) == "string" then item = getItemByName(item) end --[[@as data.ItemPrototype]]
+	return item.localised_name and item.localised_name or {"?", {"item-name." .. item.name}, {"entity-name." .. (item.place_result and item.place_result or "nothing")}}
+end
+
 --"drop" follows standard https://wiki.factorio.com/Types/ProductPrototype / https://wiki.factorio.com/Types/ItemProductPrototype
 ---@param proto data.EntityPrototype
 ---@param drop data.ProductPrototype

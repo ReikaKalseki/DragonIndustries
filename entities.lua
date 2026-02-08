@@ -140,3 +140,47 @@ function getPrimaryInventory(entity)
 		return nil
 	end
 end
+
+---@param entity LuaEntity
+---@param signals [Signal]|{string: int}
+---@param sectionName? string
+function setConstantCombinatorSignals(entity, signals, sectionName)
+	for i,signal in ipairs(val) do
+		local slot = {
+			index = i+def.inputCount,
+			signal = {type = "virtual", name = signal.SignalID},
+			count = signal.count
+		}
+		table.insert(params, slot)
+	end
+	
+	--game.print("Setting " .. entry.id .. " > " .. serpent.block(val))
+
+	local control = entry.entity.get_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
+	control. = params
+end
+
+---@param wc LuaWireConnector?
+---@param call fun(LuaEntity)
+local function forEachWireConnectionThrough(wc, call)
+	if not (wc and wc.valid) then return end
+	for _,conn in pairs(wc.real_connections) do
+		local other = conn.target.owner
+		if other and other.valid then
+			call(other)
+		end
+	end
+end
+
+---@param entity LuaEntity
+---@param call fun(LuaEntity)
+---@param connection? defines.wire_connector_id
+function forEachWireConnection(entity, call, connection)
+	if connection then
+		forEachWireConnectionThrough(entity.get_wire_connector(connection, false), call)
+	else
+		for id,wc in pairs(entity.get_wire_connectors(false)) do
+			forEachWireConnectionThrough(wc, call)
+		end
+	end
+end

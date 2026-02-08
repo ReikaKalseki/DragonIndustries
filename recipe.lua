@@ -478,6 +478,7 @@ end
 ---@param recipe string|data.RecipePrototype
 ---@return data.LocalisedString
 function getRecipeLocale(recipe)
+	recipe = lookupRecipe(recipe)
 	return recipe.localised_name and recipe.localised_name or {"?", {"recipe-name." .. recipe.name}, {"item-name." .. recipe.results[1].name}, {"entity-name." .. recipe.results[1].name}}
 end
 
@@ -540,7 +541,7 @@ function createConversionRecipe(from, to, register, tech, recursionSet)
 	ret.localised_name = {"conversion-recipe.name", getRecipeLocale(rec1), getRecipeLocale(rec2)}
 	ret.energy_required = math.max(1, rec2.energy_required-rec1.energy_required*n)
 
-	ret.icons = createABIcon(mainFrom, mainProduct)
+	ret.icons = createABIcon(mainFrom, mainProduct, true)
 	table.insert(ret.icons, {icon = "__DragonIndustries__/graphics/icons/conversion_overlay.png", icon_size = 32, shift = {-2, -2}})
 	
 	ret.allow_decomposition = false
