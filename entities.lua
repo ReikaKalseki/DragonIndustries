@@ -141,39 +141,52 @@ function getPrimaryInventory(entity)
 	end
 end
 
+---@param name SignalID
+---@param value int
+---@return LogisticFilter
+local function makeLogiFilterFromSignal(name, value)
+	return {value={type = "virtual", name = name}, min=value, max=value, quality = "normal"}
+end
+
 ---@param entity LuaEntity
 ---@param signals [Signal]|{string: int}
----@param sectionName? string
-function setConstantCombinatorSignals(entity, signals, sectionName)
-	for i,signal in ipairs(val) do
-		local slot = {
-			index = i+def.inputCount,
-			signal = {type = "virtual", name = signal.SignalID},
-			count = signal.count
-		}
-		table.insert(params, slot)
+function setConstantCombinatorSignals(entity, signals)
+	if not section then section = 1 end
+	local control = entity.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
+	if not (control and control.valid) then return end
+	if control.sections_count < 1 then
+		control.add_section()
 	end
-	
-	--game.print("Setting " .. entry.id .. " > " .. serpent.block(val))
-
-	local control = entry.entity.get_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
-	control. = params
+	local section = control.sections[1]
+	for i = 1,section.filters_count do
+		section.clear_slot(i)
+	end
+	if isTableAnArray(signals) then
+		for i,signal in ipairs(signals) do
+			section.set_slot(i, makeLogiFilterFromSignal(signal.signal, signal.count))
+		end
+	else
+		local i = 1
+		for name,val in pairs(signals) do
+			section.set_slot(i, makeLogiFilterFromSignal(name, val))
+			i = i+1
+		end
+	end
 end
 
 ---@param wc LuaWireConnector?
----@param call fun(LuaEntity)
-local function forEachWireConnectionThrough(wc, call)
+---@param call fun(WireConnection, LuaWireConnector) : boolean
+function forEachWireConnectionThrough(wc, call)
 	if not (wc and wc.valid) then return end
 	for _,conn in pairs(wc.real_connections) do
-		local other = conn.target.owner
-		if other and other.valid then
-			call(other)
+		if conn and conn.target.valid then
+			if call(conn, wc) then break end
 		end
 	end
 end
 
 ---@param entity LuaEntity
----@param call fun(LuaEntity)
+---@param call fun(WireConnection, LuaWireConnector) : boolean
 ---@param connection? defines.wire_connector_id
 function forEachWireConnection(entity, call, connection)
 	if connection then
@@ -183,4 +196,16 @@ function forEachWireConnection(entity, call, connection)
 			forEachWireConnectionThrough(wc, call)
 		end
 	end
+end
+
+---@param point LuaWireConnector
+---@param other LuaEntity
+---@return boolean
+function testIfEntityIsConnectedToWire(point, other)
+	local ret = false
+	local func = function(conn, point)
+		if conn.target == other then ret = true end
+	end
+	forEachWireConnectionThrough(point, func)
+	return ret
 end

@@ -38,6 +38,14 @@ function directionToVector(dir)
 		return {dx=1, dy=0}
 	elseif dir == defines.direction.west then
 		return {dx=-1, dy=0}
+	elseif dir == defines.direction.northwest then
+		return {dx=-1, dy=-1}
+	elseif dir == defines.direction.southwest then
+		return {dx=-1, dy=1}
+	elseif dir == defines.direction.northeast then
+		return {dx=1, dy=-1}
+	elseif dir == defines.direction.southeast then
+		return {dx=1, dy=1}
 	end
 end
 

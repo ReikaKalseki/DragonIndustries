@@ -24,12 +24,8 @@ end
 function getRecipeCost(recipe, item)
 	recipe = lookupRecipe(recipe)
 	if type(item) == "table" then item = item.name end
-		for _,ing in pairs(recipe.ingredients) do
-			if ing.name == item then
-				return ing.amount
-			end
-		end
-		return 0
+	local ing,idx = getMatchingIngredient(recipe.ingredients, item)
+	return ing and ing.amount or 0
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -168,7 +164,27 @@ function buildIngredientWithFallbacks(items, skipError)
 	return nil
 end
 
----@param list [data.IngredientPrototype|data.ProductPrototype]
+---@param list [data.IngredientPrototype]|[data.ProductPrototype]
+---@param item string|data.ItemPrototype
+---@param skipError? boolean
+---@return data.IngredientPrototype?,int|data.ProductPrototype?,int
+function getMatchingIngredient(list, item, skipError)
+	if type(item) == "table" then item = item.name end
+	for i = #list,1,-1 do
+		local ing = list[i]
+		if ing.name == item then
+			return ing,i
+		end
+	end
+	if skipError then
+		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
+	else
+		fmterror("No such item '%s' in recipe!", item)
+	end
+	return nil,-1
+end
+
+---@param list [data.IngredientPrototype]|[data.ProductPrototype]
 ---@param item string|data.ItemPrototype
 ---@param repl string|data.ItemPrototype
 ---@param ratio number
@@ -179,49 +195,34 @@ function changeIngredientInList(list, item, repl, ratio, skipError)
 	if type(repl) == "table" then repl = repl.name end
 	repl = repl --[[@as string]]
 	local put = buildIngredient(repl, 1)
-	for i = 1,#list do
-		local ing = list[i]
-		if ing.name == item then
-			put.amount = math.ceil(ing.amount*ratio)
-			list[i] = put
-			--fmtlog("Replaced %s with %s x%s in set %s", item, repl, ratio, list)
-			return ing.amount
-		end
-	end
-	if skipError then
-		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
-	else
-		fmterror("No such item '%s' in recipe!", item)
+	local ing,idx = getMatchingIngredient(list, item, skipError)
+	if ing then
+		put.amount = math.ceil(ing.amount*ratio)
+		list[idx] = put
+		--fmtlog("Replaced %s with %s x%s in set %s", item, repl, ratio, list)
+		return ing.amount
 	end
 	return 0
 end
 
----@param list [data.IngredientPrototype|data.ProductPrototype]
+---@param list [data.IngredientPrototype]|[data.ProductPrototype]
 ---@param item string|data.ItemPrototype
 ---@param delta int32
 ---@param skipError? boolean
 ---@return int32
 function changeCountInList(list, item, delta, skipError)
 	if type(item) == "table" then item = item.name end
-	for i = #list,1,-1 do
-		local ing = list[i]
-		if ing.name == item then
-			ing.amount = ing.amount+delta
-			list[i] = ing
-			if ing.amount <= 0 then
-				table.remove(list, i)
-				return 0
-			else
-				return ing.amount
-			end
+	local ing,idx = getMatchingIngredient(list, item, skipError)
+	if ing then
+		ing.amount = ing.amount+delta
+		list[idx] = ing
+		if ing.amount <= 0 then
+			table.remove(list, idx)
+			return 0
+		else
+			return ing.amount
 		end
 	end
-	if skipError then
-		--log("No such item '" .. item .. "' in recipe!\n" .. debug.traceback())
-	else
-		fmterror("No such item '%s' in recipe!", item)
-	end
-	return 0
 end
 
 ---@param recipe string|data.RecipePrototype
@@ -274,13 +275,10 @@ end
 function removeItemFromRecipe(recipe, item)
 	recipe = lookupRecipe(recipe)
 	if type(item) == "table" then item = item.name end
-	for i = #recipe.ingredients,1,-1 do
-		local ing = recipe.ingredients[i]
-			if ing.name == item then
-				table.remove(recipe.ingredients, i)
-				break
-			end
-		end
+	local ing,idx = getMatchingIngredient(recipe.ingredients, item, true)
+	if idx > -1 then
+		table.remove(recipe.ingredients, idx)
+	end
 end
 
 ---@param recipe string|data.RecipePrototype

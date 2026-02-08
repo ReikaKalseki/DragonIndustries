@@ -78,7 +78,7 @@ end
 ---@return int
 function getTableSize(val)
 	if not val then return -1 end
-	if type(val) ~= "table" then error("Value '" .. serpent.block(val) .. "' is not a table!") end
+	if type(val) ~= "table" then fmterror("Value '%s' is not a table!", val) end
 	return table_size(val)
 end
 

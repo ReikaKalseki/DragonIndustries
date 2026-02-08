@@ -1,3 +1,5 @@
+require "mathhelper"
+
 ---@param area BoundingBox
 ---@param dx number
 ---@param dy number
@@ -9,6 +11,11 @@ function moveBox(area, dx, dy)
 	area.right_bottom.x = area.right_bottom.x+dx
 	area.right_bottom.y = area.right_bottom.y+dy
 	return area
+end
+
+function moveBoxDirection(area, dir, dist)
+	local vec = directionToVector(dir)
+	return moveBox(area, dist*vec[1], dist*vec[2])
 end
 
 ---@param area BoundingBox
@@ -39,6 +46,10 @@ end
 function getPaddedBox(entity, padX, padY)
 	local base = entity.prototype.collision_box
 	return moveBox(padBox(base, padX, padY), entity.position.x, entity.position.y)
+end
+
+function getBox(entity)
+	return getPaddedBox(entity.prototype.collision_box, 0, 0)	
 end
 
 ---@param box1 BoundingBox
